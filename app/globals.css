@@ -1,26 +1,65 @@
 @import "tailwindcss";
+@config "../tailwind.config.ts";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* 1.1 Core */
+  --lime: #EAFC5F;
+  --ink: #212121;
+  --slate: #899FB0;
+  --white: #FFFFFF;
+
+  /* 1.2 Derived surfaces */
+  --bg-light: #F1F2F4;
+  --bg-home: linear-gradient(180deg, #9AACBB 0%, #7F94A6 100%);
+  --card-peek: #8AA0B1;
+  --ink-60: rgba(33, 33, 33, 0.6);
+  --ink-40: rgba(33, 33, 33, 0.42);
+  --ink-12: rgba(33, 33, 33, 0.12);
+  --white-70: rgba(255, 255, 255, 0.72);
+  --glass-dark: rgba(33, 33, 33, 0.28);
+  --glass-light: rgba(255, 255, 255, 0.18);
+
+  /* 1.3 Risk semantics */
+  --risk-low: #BFE95C;
+  --risk-mid: #F6D24E;
+  --risk-high: #F09A3E;
+  --risk-severe: #E8603C;
+
+  /* 1.4 Map */
+  --map-water: #2F3D4C;
+  --map-land: #7E93A4;
+  --map-park: #667B8E;
+  --map-road: rgba(255, 255, 255, 0.55);
+  --map-road-major: rgba(255, 255, 255, 0.85);
+  --map-label: rgba(255, 255, 255, 0.65);
+
+  /* 3.1 Radii */
+  --r-card: 28px;
+  --r-inner: 22px;
+  --r-chip: 14px;
+  --r-full: 999px;
+
+  /* 3.2 Shadows */
+  --shadow-card: 0 12px 28px rgba(33, 33, 33, 0.1);
+  --shadow-float: 0 10px 24px rgba(33, 33, 33, 0.18);
+
+  /* Desktop frame behind the 430px phone column (sanctioned by the setup prompt) */
+  --bg-page: #E8EAEC;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+* {
+  outline: none;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+*:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg-light);
+  color: var(--ink);
+  font-family: var(--font-onest), "Onest", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }

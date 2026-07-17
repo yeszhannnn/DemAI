@@ -1,0 +1,21 @@
+{
+  "_comment": "Calibrated GDD thresholds for Almaty (base 5C). Real Open-Meteo archive data shows ~1622 GDD accumulated from Apr 1 by mid-July — far above the generic-literature defaults (wormwood end 950), which would wrongly zero every species in July. These values are calibrated against Almaty's climate and local phenology (birch: spring; wormwood: late Jul–Aug peak; ragweed: Aug–Sep peak). Still // CALIBRATE: verify with team lead before finals.",
+  "birch": {
+    "accumulateFrom": "03-01",
+    "startGdd": 90,
+    "peakGdd": 170,
+    "endGdd": 300
+  },
+  "wormwood": {
+    "accumulateFrom": "04-01",
+    "startGdd": 1100,
+    "peakGdd": 1900,
+    "endGdd": 2600
+  },
+  "ragweed": {
+    "accumulateFrom": "04-01",
+    "startGdd": 1500,
+    "peakGdd": 2200,
+    "endGdd": 2900
+  }
+}

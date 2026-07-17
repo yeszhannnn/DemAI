@@ -1,0 +1,885 @@
+{
+  "generatedAt": "2026-07-17T10:11:31.381Z",
+  "districts": {
+    "almaly": {
+      "district": "almaly",
+      "generatedAt": "2026-07-17T10:11:28.536Z",
+      "risk": 3,
+      "verdict": {
+        "textRu": "Хороший день — гуляй спокойно",
+        "textKk": "Күні жақсы — тыныш серуендеңіз",
+        "chipRu": "Низкий риск",
+        "chipKk": "Төмен тәуекел",
+        "chipToken": "risk-low",
+        "icon": "thumbs-up"
+      },
+      "breakdown": [
+        {
+          "key": "pm",
+          "labelRu": "PM2.5",
+          "labelKk": "PM2.5",
+          "pct": 0
+        },
+        {
+          "key": "pollen",
+          "labelRu": "Пыльца",
+          "labelKk": "Тозаң",
+          "pct": 73.6842105263158
+        },
+        {
+          "key": "wx",
+          "labelRu": "Погода",
+          "labelKk": "Ауа райы",
+          "pct": 26.31578947368421
+        }
+      ],
+      "pm25": {
+        "ug": 0
+      },
+      "pollen": {
+        "wormwood": 3,
+        "ragweed": 1,
+        "birch": 0,
+        "phaseNote": {
+          "ru": "Активное пыление",
+          "kk": "Белсенді тозаңдану"
+        }
+      },
+      "weather": {
+        "windMs": 1.9,
+        "humidity": 14,
+        "precipMm": 0,
+        "tempC": 38
+      },
+      "hourly": [
+        {
+          "hourLabel": "пт 16:00",
+          "risk": 3
+        },
+        {
+          "hourLabel": "пт 17:00",
+          "risk": 2
+        },
+        {
+          "hourLabel": "пт 18:00",
+          "risk": 3
+        },
+        {
+          "hourLabel": "пт 19:00",
+          "risk": 3
+        },
+        {
+          "hourLabel": "пт 20:00",
+          "risk": 3
+        },
+        {
+          "hourLabel": "пт 21:00",
+          "risk": 3
+        },
+        {
+          "hourLabel": "пт 22:00",
+          "risk": 3
+        },
+        {
+          "hourLabel": "пт 23:00",
+          "risk": 3
+        },
+        {
+          "hourLabel": "сб 00:00",
+          "risk": 3
+        },
+        {
+          "hourLabel": "сб 01:00",
+          "risk": 3
+        },
+        {
+          "hourLabel": "сб 02:00",
+          "risk": 3
+        },
+        {
+          "hourLabel": "сб 03:00",
+          "risk": 3
+        },
+        {
+          "hourLabel": "сб 04:00",
+          "risk": 3
+        },
+        {
+          "hourLabel": "сб 05:00",
+          "risk": 3
+        }
+      ],
+      "sparse": true
+    },
+    "auezov": {
+      "district": "auezov",
+      "generatedAt": "2026-07-17T10:11:29.319Z",
+      "risk": 4,
+      "verdict": {
+        "textRu": "Умеренно — прислушивайся к себе",
+        "textKk": "Орташа — өзіңізді тыңдаңыз",
+        "chipRu": "Средний риск",
+        "chipKk": "Орта тәуекел",
+        "chipToken": "risk-mid",
+        "icon": "minus-circle"
+      },
+      "breakdown": [
+        {
+          "key": "pm",
+          "labelRu": "PM2.5",
+          "labelKk": "PM2.5",
+          "pct": 0
+        },
+        {
+          "key": "pollen",
+          "labelRu": "Пыльца",
+          "labelKk": "Тозаң",
+          "pct": 78.87323943661971
+        },
+        {
+          "key": "wx",
+          "labelRu": "Погода",
+          "labelKk": "Ауа райы",
+          "pct": 21.12676056338028
+        }
+      ],
+      "pm25": {
+        "ug": 0
+      },
+      "pollen": {
+        "wormwood": 4,
+        "ragweed": 2,
+        "birch": 0,
+        "phaseNote": {
+          "ru": "Активное пыление",
+          "kk": "Белсенді тозаңдану"
+        }
+      },
+      "weather": {
+        "windMs": 1.9,
+        "humidity": 14,
+        "precipMm": 0,
+        "tempC": 39
+      },
+      "hourly": [
+        {
+          "hourLabel": "пт 16:00",
+          "risk": 4
+        },
+        {
+          "hourLabel": "пт 17:00",
+          "risk": 3
+        },
+        {
+          "hourLabel": "пт 18:00",
+          "risk": 4
+        },
+        {
+          "hourLabel": "пт 19:00",
+          "risk": 4
+        },
+        {
+          "hourLabel": "пт 20:00",
+          "risk": 4
+        },
+        {
+          "hourLabel": "пт 21:00",
+          "risk": 4
+        },
+        {
+          "hourLabel": "пт 22:00",
+          "risk": 4
+        },
+        {
+          "hourLabel": "пт 23:00",
+          "risk": 4
+        },
+        {
+          "hourLabel": "сб 00:00",
+          "risk": 4
+        },
+        {
+          "hourLabel": "сб 01:00",
+          "risk": 4
+        },
+        {
+          "hourLabel": "сб 02:00",
+          "risk": 4
+        },
+        {
+          "hourLabel": "сб 03:00",
+          "risk": 4
+        },
+        {
+          "hourLabel": "сб 04:00",
+          "risk": 4
+        },
+        {
+          "hourLabel": "сб 05:00",
+          "risk": 4
+        }
+      ],
+      "sparse": true
+    },
+    "bostandyk": {
+      "district": "bostandyk",
+      "generatedAt": "2026-07-17T10:11:29.612Z",
+      "risk": 2,
+      "verdict": {
+        "textRu": "Хороший день — гуляй спокойно",
+        "textKk": "Күні жақсы — тыныш серуендеңіз",
+        "chipRu": "Низкий риск",
+        "chipKk": "Төмен тәуекел",
+        "chipToken": "risk-low",
+        "icon": "thumbs-up"
+      },
+      "breakdown": [
+        {
+          "key": "pm",
+          "labelRu": "PM2.5",
+          "labelKk": "PM2.5",
+          "pct": 0
+        },
+        {
+          "key": "pollen",
+          "labelRu": "Пыльца",
+          "labelKk": "Тозаң",
+          "pct": 100
+        },
+        {
+          "key": "wx",
+          "labelRu": "Погода",
+          "labelKk": "Ауа райы",
+          "pct": 0
+        }
+      ],
+      "pm25": {
+        "ug": 0
+      },
+      "pollen": {
+        "wormwood": 3,
+        "ragweed": 2,
+        "birch": 0,
+        "phaseNote": {
+          "ru": "Активное пыление",
+          "kk": "Белсенді тозаңдану"
+        }
+      },
+      "weather": {
+        "windMs": 2.6,
+        "humidity": 16,
+        "precipMm": 0,
+        "tempC": 38
+      },
+      "hourly": [
+        {
+          "hourLabel": "пт 16:00",
+          "risk": 2
+        },
+        {
+          "hourLabel": "пт 17:00",
+          "risk": 2
+        },
+        {
+          "hourLabel": "пт 18:00",
+          "risk": 3
+        },
+        {
+          "hourLabel": "пт 19:00",
+          "risk": 3
+        },
+        {
+          "hourLabel": "пт 20:00",
+          "risk": 3
+        },
+        {
+          "hourLabel": "пт 21:00",
+          "risk": 3
+        },
+        {
+          "hourLabel": "пт 22:00",
+          "risk": 3
+        },
+        {
+          "hourLabel": "пт 23:00",
+          "risk": 3
+        },
+        {
+          "hourLabel": "сб 00:00",
+          "risk": 3
+        },
+        {
+          "hourLabel": "сб 01:00",
+          "risk": 3
+        },
+        {
+          "hourLabel": "сб 02:00",
+          "risk": 3
+        },
+        {
+          "hourLabel": "сб 03:00",
+          "risk": 3
+        },
+        {
+          "hourLabel": "сб 04:00",
+          "risk": 3
+        },
+        {
+          "hourLabel": "сб 05:00",
+          "risk": 2
+        }
+      ],
+      "sparse": true
+    },
+    "jetysu": {
+      "district": "jetysu",
+      "generatedAt": "2026-07-17T10:11:29.885Z",
+      "risk": 4,
+      "verdict": {
+        "textRu": "Умеренно — прислушивайся к себе",
+        "textKk": "Орташа — өзіңізді тыңдаңыз",
+        "chipRu": "Средний риск",
+        "chipKk": "Орта тәуекел",
+        "chipToken": "risk-mid",
+        "icon": "minus-circle"
+      },
+      "breakdown": [
+        {
+          "key": "pm",
+          "labelRu": "PM2.5",
+          "labelKk": "PM2.5",
+          "pct": 0
+        },
+        {
+          "key": "pollen",
+          "labelRu": "Пыльца",
+          "labelKk": "Тозаң",
+          "pct": 78.87323943661971
+        },
+        {
+          "key": "wx",
+          "labelRu": "Погода",
+          "labelKk": "Ауа райы",
+          "pct": 21.12676056338028
+        }
+      ],
+      "pm25": {
+        "ug": 0
+      },
+      "pollen": {
+        "wormwood": 4,
+        "ragweed": 2,
+        "birch": 0,
+        "phaseNote": {
+          "ru": "Активное пыление",
+          "kk": "Белсенді тозаңдану"
+        }
+      },
+      "weather": {
+        "windMs": 1.9,
+        "humidity": 14,
+        "precipMm": 0,
+        "tempC": 39
+      },
+      "hourly": [
+        {
+          "hourLabel": "пт 16:00",
+          "risk": 4
+        },
+        {
+          "hourLabel": "пт 17:00",
+          "risk": 3
+        },
+        {
+          "hourLabel": "пт 18:00",
+          "risk": 4
+        },
+        {
+          "hourLabel": "пт 19:00",
+          "risk": 4
+        },
+        {
+          "hourLabel": "пт 20:00",
+          "risk": 4
+        },
+        {
+          "hourLabel": "пт 21:00",
+          "risk": 4
+        },
+        {
+          "hourLabel": "пт 22:00",
+          "risk": 4
+        },
+        {
+          "hourLabel": "пт 23:00",
+          "risk": 4
+        },
+        {
+          "hourLabel": "сб 00:00",
+          "risk": 4
+        },
+        {
+          "hourLabel": "сб 01:00",
+          "risk": 4
+        },
+        {
+          "hourLabel": "сб 02:00",
+          "risk": 4
+        },
+        {
+          "hourLabel": "сб 03:00",
+          "risk": 4
+        },
+        {
+          "hourLabel": "сб 04:00",
+          "risk": 4
+        },
+        {
+          "hourLabel": "сб 05:00",
+          "risk": 4
+        }
+      ],
+      "sparse": true
+    },
+    "medeu": {
+      "district": "medeu",
+      "generatedAt": "2026-07-17T10:11:30.546Z",
+      "risk": 1,
+      "verdict": {
+        "textRu": "Хороший день — гуляй спокойно",
+        "textKk": "Күні жақсы — тыныш серуендеңіз",
+        "chipRu": "Низкий риск",
+        "chipKk": "Төмен тәуекел",
+        "chipToken": "risk-low",
+        "icon": "thumbs-up"
+      },
+      "breakdown": [
+        {
+          "key": "pm",
+          "labelRu": "PM2.5",
+          "labelKk": "PM2.5",
+          "pct": 33.333333333333336
+        },
+        {
+          "key": "pollen",
+          "labelRu": "Пыльца",
+          "labelKk": "Тозаң",
+          "pct": 33.333333333333336
+        },
+        {
+          "key": "wx",
+          "labelRu": "Погода",
+          "labelKk": "Ауа райы",
+          "pct": 33.333333333333336
+        }
+      ],
+      "pm25": {
+        "ug": 0
+      },
+      "pollen": {
+        "wormwood": 0,
+        "ragweed": 0,
+        "birch": 0,
+        "phaseNote": {
+          "ru": "Пыльцевой сезон не начался",
+          "kk": "Тозаңды маусым басталмады"
+        }
+      },
+      "weather": {
+        "windMs": 3.1,
+        "humidity": 22,
+        "precipMm": 0,
+        "tempC": 30
+      },
+      "hourly": [
+        {
+          "hourLabel": "пт 16:00",
+          "risk": 1
+        },
+        {
+          "hourLabel": "пт 17:00",
+          "risk": 1
+        },
+        {
+          "hourLabel": "пт 18:00",
+          "risk": 1
+        },
+        {
+          "hourLabel": "пт 19:00",
+          "risk": 1
+        },
+        {
+          "hourLabel": "пт 20:00",
+          "risk": 1
+        },
+        {
+          "hourLabel": "пт 21:00",
+          "risk": 1
+        },
+        {
+          "hourLabel": "пт 22:00",
+          "risk": 1
+        },
+        {
+          "hourLabel": "пт 23:00",
+          "risk": 1
+        },
+        {
+          "hourLabel": "сб 00:00",
+          "risk": 1
+        },
+        {
+          "hourLabel": "сб 01:00",
+          "risk": 1
+        },
+        {
+          "hourLabel": "сб 02:00",
+          "risk": 1
+        },
+        {
+          "hourLabel": "сб 03:00",
+          "risk": 1
+        },
+        {
+          "hourLabel": "сб 04:00",
+          "risk": 1
+        },
+        {
+          "hourLabel": "сб 05:00",
+          "risk": 1
+        }
+      ],
+      "sparse": true
+    },
+    "nauryzbai": {
+      "district": "nauryzbai",
+      "generatedAt": "2026-07-17T10:11:30.815Z",
+      "risk": 2,
+      "verdict": {
+        "textRu": "Хороший день — гуляй спокойно",
+        "textKk": "Күні жақсы — тыныш серуендеңіз",
+        "chipRu": "Низкий риск",
+        "chipKk": "Төмен тәуекел",
+        "chipToken": "risk-low",
+        "icon": "thumbs-up"
+      },
+      "breakdown": [
+        {
+          "key": "pm",
+          "labelRu": "PM2.5",
+          "labelKk": "PM2.5",
+          "pct": 0
+        },
+        {
+          "key": "pollen",
+          "labelRu": "Пыльца",
+          "labelKk": "Тозаң",
+          "pct": 100
+        },
+        {
+          "key": "wx",
+          "labelRu": "Погода",
+          "labelKk": "Ауа райы",
+          "pct": 0
+        }
+      ],
+      "pm25": {
+        "ug": 0
+      },
+      "pollen": {
+        "wormwood": 3,
+        "ragweed": 0,
+        "birch": 0,
+        "phaseNote": {
+          "ru": "Активное пыление",
+          "kk": "Белсенді тозаңдану"
+        }
+      },
+      "weather": {
+        "windMs": 2.6,
+        "humidity": 16,
+        "precipMm": 0,
+        "tempC": 37
+      },
+      "hourly": [
+        {
+          "hourLabel": "пт 16:00",
+          "risk": 2
+        },
+        {
+          "hourLabel": "пт 17:00",
+          "risk": 2
+        },
+        {
+          "hourLabel": "пт 18:00",
+          "risk": 3
+        },
+        {
+          "hourLabel": "пт 19:00",
+          "risk": 3
+        },
+        {
+          "hourLabel": "пт 20:00",
+          "risk": 3
+        },
+        {
+          "hourLabel": "пт 21:00",
+          "risk": 3
+        },
+        {
+          "hourLabel": "пт 22:00",
+          "risk": 3
+        },
+        {
+          "hourLabel": "пт 23:00",
+          "risk": 3
+        },
+        {
+          "hourLabel": "сб 00:00",
+          "risk": 3
+        },
+        {
+          "hourLabel": "сб 01:00",
+          "risk": 3
+        },
+        {
+          "hourLabel": "сб 02:00",
+          "risk": 3
+        },
+        {
+          "hourLabel": "сб 03:00",
+          "risk": 3
+        },
+        {
+          "hourLabel": "сб 04:00",
+          "risk": 3
+        },
+        {
+          "hourLabel": "сб 05:00",
+          "risk": 2
+        }
+      ],
+      "sparse": true
+    },
+    "turksib": {
+      "district": "turksib",
+      "generatedAt": "2026-07-17T10:11:31.097Z",
+      "risk": 3,
+      "verdict": {
+        "textRu": "Хороший день — гуляй спокойно",
+        "textKk": "Күні жақсы — тыныш серуендеңіз",
+        "chipRu": "Низкий риск",
+        "chipKk": "Төмен тәуекел",
+        "chipToken": "risk-low",
+        "icon": "thumbs-up"
+      },
+      "breakdown": [
+        {
+          "key": "pm",
+          "labelRu": "PM2.5",
+          "labelKk": "PM2.5",
+          "pct": 0
+        },
+        {
+          "key": "pollen",
+          "labelRu": "Пыльца",
+          "labelKk": "Тозаң",
+          "pct": 73.6842105263158
+        },
+        {
+          "key": "wx",
+          "labelRu": "Погода",
+          "labelKk": "Ауа райы",
+          "pct": 26.31578947368421
+        }
+      ],
+      "pm25": {
+        "ug": 0
+      },
+      "pollen": {
+        "wormwood": 3,
+        "ragweed": 1,
+        "birch": 0,
+        "phaseNote": {
+          "ru": "Активное пыление",
+          "kk": "Белсенді тозаңдану"
+        }
+      },
+      "weather": {
+        "windMs": 1.9,
+        "humidity": 13,
+        "precipMm": 0,
+        "tempC": 38
+      },
+      "hourly": [
+        {
+          "hourLabel": "пт 16:00",
+          "risk": 3
+        },
+        {
+          "hourLabel": "пт 17:00",
+          "risk": 2
+        },
+        {
+          "hourLabel": "пт 18:00",
+          "risk": 3
+        },
+        {
+          "hourLabel": "пт 19:00",
+          "risk": 3
+        },
+        {
+          "hourLabel": "пт 20:00",
+          "risk": 3
+        },
+        {
+          "hourLabel": "пт 21:00",
+          "risk": 3
+        },
+        {
+          "hourLabel": "пт 22:00",
+          "risk": 3
+        },
+        {
+          "hourLabel": "пт 23:00",
+          "risk": 3
+        },
+        {
+          "hourLabel": "сб 00:00",
+          "risk": 3
+        },
+        {
+          "hourLabel": "сб 01:00",
+          "risk": 3
+        },
+        {
+          "hourLabel": "сб 02:00",
+          "risk": 3
+        },
+        {
+          "hourLabel": "сб 03:00",
+          "risk": 3
+        },
+        {
+          "hourLabel": "сб 04:00",
+          "risk": 3
+        },
+        {
+          "hourLabel": "сб 05:00",
+          "risk": 3
+        }
+      ],
+      "sparse": true
+    },
+    "alatau": {
+      "district": "alatau",
+      "generatedAt": "2026-07-17T10:11:31.381Z",
+      "risk": 4,
+      "verdict": {
+        "textRu": "Умеренно — прислушивайся к себе",
+        "textKk": "Орташа — өзіңізді тыңдаңыз",
+        "chipRu": "Средний риск",
+        "chipKk": "Орта тәуекел",
+        "chipToken": "risk-mid",
+        "icon": "minus-circle"
+      },
+      "breakdown": [
+        {
+          "key": "pm",
+          "labelRu": "PM2.5",
+          "labelKk": "PM2.5",
+          "pct": 0
+        },
+        {
+          "key": "pollen",
+          "labelRu": "Пыльца",
+          "labelKk": "Тозаң",
+          "pct": 78.87323943661971
+        },
+        {
+          "key": "wx",
+          "labelRu": "Погода",
+          "labelKk": "Ауа райы",
+          "pct": 21.12676056338028
+        }
+      ],
+      "pm25": {
+        "ug": 0
+      },
+      "pollen": {
+        "wormwood": 4,
+        "ragweed": 2,
+        "birch": 0,
+        "phaseNote": {
+          "ru": "Активное пыление",
+          "kk": "Белсенді тозаңдану"
+        }
+      },
+      "weather": {
+        "windMs": 1.9,
+        "humidity": 14,
+        "precipMm": 0,
+        "tempC": 39
+      },
+      "hourly": [
+        {
+          "hourLabel": "пт 16:00",
+          "risk": 4
+        },
+        {
+          "hourLabel": "пт 17:00",
+          "risk": 3
+        },
+        {
+          "hourLabel": "пт 18:00",
+          "risk": 4
+        },
+        {
+          "hourLabel": "пт 19:00",
+          "risk": 4
+        },
+        {
+          "hourLabel": "пт 20:00",
+          "risk": 4
+        },
+        {
+          "hourLabel": "пт 21:00",
+          "risk": 4
+        },
+        {
+          "hourLabel": "пт 22:00",
+          "risk": 4
+        },
+        {
+          "hourLabel": "пт 23:00",
+          "risk": 4
+        },
+        {
+          "hourLabel": "сб 00:00",
+          "risk": 4
+        },
+        {
+          "hourLabel": "сб 01:00",
+          "risk": 4
+        },
+        {
+          "hourLabel": "сб 02:00",
+          "risk": 4
+        },
+        {
+          "hourLabel": "сб 03:00",
+          "risk": 4
+        },
+        {
+          "hourLabel": "сб 04:00",
+          "risk": 4
+        },
+        {
+          "hourLabel": "сб 05:00",
+          "risk": 4
+        }
+      ],
+      "sparse": true
+    }
+  }
+}
