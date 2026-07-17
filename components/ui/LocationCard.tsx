@@ -5,7 +5,7 @@ import { TopoTexture } from "./TopoTexture";
 
 /**
  * LocationCard — DESIGN §4.2. White card --r-card, padding 16.
- * Row 1: 40px circle #EDEFF1 with an icon (home/backpack) + h2 title +
+ * Row 1: 40px circle (--icon-bg) with an icon (home/backpack) + h2 title +
  * a caption/ink-60 line with a 14px map-pin and the district address.
  * Row 2: AccentBlock (below).
  */
@@ -35,19 +35,19 @@ export function LocationCard({
 }: LocationCardProps) {
   return (
     <div
-      className={`bg-white shadow-card ${className}`}
+      className={`tappable bg-white shadow-card ${className}`}
       style={{ borderRadius: "var(--r-card)", padding: 16 }}
     >
       {/* Row 1 */}
       <button
         type="button"
         onClick={onOpen}
-        className="flex w-full items-center gap-3 text-left transition-transform duration-150 active:scale-[.98]"
+        className="flex w-full items-center gap-3 text-left"
         style={{ border: "none", background: "transparent", padding: 0, cursor: onOpen ? "pointer" : "default" }}
       >
         <span
           className="inline-flex shrink-0 items-center justify-center rounded-full"
-          style={{ width: 40, height: 40, background: "#EDEFF1", color: "var(--ink)" }}
+          style={{ width: 40, height: 40, background: "var(--icon-bg)", color: "var(--ink)" }}
         >
           <Icon size={20} strokeWidth={2} />
         </span>

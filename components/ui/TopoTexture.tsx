@@ -31,10 +31,51 @@ export interface TopoTextureProps {
 const SYSTEM_A = { x: -40, y: -20, base: (i: number) => 30 + i * 26 };
 const SAMPLES = 96;
 
-function ringPath(fx: number, fy: number, base: number, i: number, seed: number): string {
+export interface TopoFocus {
+  x: number;
+  y: number;
+}
+
+export interface BuildTopoRingsOptions {
+  focus: TopoFocus;
+  rings?: number;
+  seed?: number;
+  samples?: number;
+  /** Base radius as a function of ring index i (1-based). */
+  base?: (i: number) => number;
+}
+
+/**
+ * Build deterministic contour-line ring paths radiating from `focus`. Pure,
+ * no DOM. Reused by TopoTexture (default off-canvas focus) and by the hero
+ * blob SVG (focus = the blob's off-screen center, so contours radiate from
+ * the blob's origin — DESIGN §5.1 item 2 / §3.5).
+ */
+export function buildTopoRings({
+  focus,
+  rings = 22,
+  seed = 1,
+  samples = SAMPLES,
+  base = (i) => 30 + i * 26,
+}: BuildTopoRingsOptions): string[] {
+  const out: string[] = [];
+  for (let i = 1; i <= rings; i++) {
+    out.push(ringPath(focus.x, focus.y, base(i), i, seed, samples));
+  }
+  return out;
+}
+
+function ringPath(
+  fx: number,
+  fy: number,
+  base: number,
+  i: number,
+  seed: number,
+  samples = SAMPLES,
+): string {
   let d = "";
-  for (let k = 0; k < SAMPLES; k++) {
-    const theta = (k / SAMPLES) * Math.PI * 2;
+  for (let k = 0; k < samples; k++) {
+    const theta = (k / samples) * Math.PI * 2;
     const r = base * (1 + 0.05 * Math.sin(2 * theta + seed + 0.35 * i));
     const x = fx + r * Math.cos(theta);
     const y = fy + r * Math.sin(theta);
@@ -44,14 +85,10 @@ function ringPath(fx: number, fy: number, base: number, i: number, seed: number)
 }
 
 export function TopoTexture({ tone, rings = 22, seed = 1, className = "", svgHref }: TopoTextureProps) {
-  const paths = useMemo(() => {
-    const out: string[] = [];
-    // System A — long off-canvas sweep.
-    for (let i = 1; i <= rings; i++) {
-      out.push(ringPath(SYSTEM_A.x, SYSTEM_A.y, SYSTEM_A.base(i), i, seed));
-    }
-    return out;
-  }, [rings, seed]);
+  const paths = useMemo(
+    () => buildTopoRings({ focus: { x: SYSTEM_A.x, y: SYSTEM_A.y }, rings, seed, base: SYSTEM_A.base }),
+    [rings, seed],
+  );
 
   const stroke = tone === "ink" ? "var(--ink)" : "var(--white)";
   const strokeOpacity = tone === "ink" ? 0.13 : 0.1;

@@ -19,6 +19,7 @@ import {
   Dumbbell,
   HeartPulse,
   Home,
+  Info,
   Leaf,
   MinusCircle,
   Shield,
@@ -32,12 +33,14 @@ import { TopBar } from "@/components/ui/TopBar";
 import { VerdictChip } from "@/components/ui/VerdictChip";
 import { MetricCard } from "@/components/ui/MetricCard";
 import { ForecastBars, type ForecastBar } from "@/components/ui/ForecastBars";
-import { TopoTexture } from "@/components/ui/TopoTexture";
-import { useProfile } from "@/lib/useProfile";
+import { TopoTexture, buildTopoRings } from "@/components/ui/TopoTexture";
+import { useProfile, resetMeSync, syncMe } from "@/lib/useProfile";
 import { t as tStatic, useLocale, useT, type Locale } from "@/lib/i18n";
 import { getDistrict } from "@/data/districts";
 import { pickActions, type ActionContext, type ActionEntry } from "@/lib/actions";
 import type { RiskResponse } from "@/lib/compose";
+import type { Profile } from "@/lib/risk";
+import { DiarySheet, type DiaryStatus } from "./DiarySheet";
 
 const WEEKDAY_SHORT_RU = ["вс", "пн", "вт", "ср", "чт", "пт", "сб"];
 
@@ -68,6 +71,23 @@ function nowHourLabel(): string {
   return `${wd} ${hh}:00`;
 }
 
+/**
+ * Frozen "now" label for DEMO mode: one hour before the snapshot's first
+ * forecast hour (compose.ts builds `hourly` starting at the *next* hour).
+ * Pure function of the snapshot label — no `new Date()` — so the demo
+ * forecast curve stays byte-identical today, tomorrow, offline (DESIGN §7).
+ */
+function prevHourLabel(label: string): string {
+  const m = label.match(/^(\S+)\s+(\d{2}):00$/);
+  if (!m) return label;
+  const wdIdx = WEEKDAY_SHORT_RU.indexOf(m[1]);
+  if (wdIdx === -1) return label;
+  const hh = parseInt(m[2], 10);
+  const nh = (hh - 1 + 24) % 24;
+  const nd = nh === 23 ? (wdIdx - 1 + 7) % 7 : wdIdx;
+  return `${WEEKDAY_SHORT_RU[nd]} ${String(nh).padStart(2, "0")}:00`;
+}
+
 /** Split "сб 15:00" → { day: "сб", hour: "15:00" } for ForecastBars. */
 function splitLabel(label: string): { day?: string; hour: string } {
   const idx = label.indexOf(" ");
@@ -89,17 +109,27 @@ interface DetailClientProps {
 
 export function DetailClient({ district, demo }: DetailClientProps) {
   const router = useRouter();
-  const { profile } = useProfile();
+  const { anonId, profile, diaryCount, todayMarked, saveProfile, setDiaryCount, setTodayMarked } =
+    useProfile();
   const tt = useT();
   const [locale] = useLocale();
   const [data, setData] = useState<RiskResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [stale, setStale] = useState(false);
   const whyRef = useRef<HTMLDivElement | null>(null);
+  const dataRef = useRef<RiskResponse | null>(null);
+  dataRef.current = data;
 
-  // Fetch /api/risk (demo → snapshot, zero external network).
+  // Fetch /api/risk (demo → snapshot, zero external network). The effect re-runs
+  // when the profile changes (e.g. after a diary write flips personalPm25),
+  // but we must NOT flash the skeleton on a re-fetch — that reads as a page
+  // reload. The skeleton is only for the very first load; on a profile/district
+  // change we keep the previous data on screen and swap silently when the new
+  // response arrives (no reload — PROMPTS §11.5).
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
+    if (!dataRef.current) setLoading(true);
+    setStale(false);
     const p = profile ? btoa(JSON.stringify(profile)) : "";
     const url = `/api/risk?district=${encodeURIComponent(district)}${
       demo ? "&demo=1" : ""
@@ -113,20 +143,23 @@ export function DetailClient({ district, demo }: DetailClientProps) {
         }
       })
       .catch(() => {
-        // Fallback: try the demo snapshot so the screen never crashes.
-        if (!cancelled) {
-          fetch(`/api/risk?district=${encodeURIComponent(district)}&demo=1`)
-            .then((r) => r.json())
-            .then((j: RiskResponse) => {
-              if (!cancelled) {
-                setData(j);
-                setLoading(false);
-              }
-            })
-            .catch(() => {
-              if (!cancelled) setLoading(false);
-            });
-        }
+        // Friendly RU error boundary (Prompt 12.2): instead of crashing, fall
+        // back to the committed demo snapshot and surface a one-line «Данные
+        // задерживаются — показываем последний снимок» note. The screen never
+        // blanks — the demo snapshot is the last-resort truth.
+        if (cancelled) return;
+        fetch(`/api/risk?district=${encodeURIComponent(district)}&demo=1`)
+          .then((r) => r.json())
+          .then((j: RiskResponse) => {
+            if (!cancelled) {
+              setData(j);
+              setStale(true);
+              setLoading(false);
+            }
+          })
+          .catch(() => {
+            if (!cancelled) setLoading(false);
+          });
       });
     return () => {
       cancelled = true;
@@ -148,13 +181,18 @@ export function DetailClient({ district, demo }: DetailClientProps) {
 
   const bars = useMemo<ForecastBar[]>(() => {
     if (!data) return [];
-    const now: ForecastBar = { ...splitLabel(nowHourLabel()), risk: data.risk };
+    // DEMO: derive the "now" label from the frozen snapshot so the curve is
+    // byte-identical across days. LIVE: use the real current hour (date-dependent).
+    const nowLabel = demo && data.hourly.length
+      ? prevHourLabel(data.hourly[0].hourLabel)
+      : nowHourLabel();
+    const now: ForecastBar = { ...splitLabel(nowLabel), risk: data.risk };
     const rest: ForecastBar[] = data.hourly.map((h) => ({
       ...splitLabel(h.hourLabel),
       risk: h.risk,
     }));
     return [now, ...rest];
-  }, [data]);
+  }, [data, demo]);
 
   const districtName = useMemo(() => {
     const d = getDistrict(district);
@@ -167,17 +205,23 @@ export function DetailClient({ district, demo }: DetailClientProps) {
   }
 
   return (
-    <Screen>
-      <div className="flex flex-col gap-4 pt-6 pb-10">
+    <Screen fill={false}>
+      <div className="flex flex-col gap-4 pt-6">
         {/* 1. TopBar (detail) */}
         <section data-testid="section-topbar">
           <TopBar
             variant="detail"
             title={districtName}
             subtitle={tt("app.city")}
-            onBack={() => router.back()}
+            onHome={() => router.push("/home")}
+            iconClassName="tap"
           />
         </section>
+
+        {/* Friendly RU error-boundary note — shown only when the live fetch
+            failed and we fell back to the committed demo snapshot (Prompt 12.2).
+            Not one of the 9 sections; a status line above the hero. */}
+        {stale && data ? <StaleNote text={tt("detail.stale")} /> : null}
 
         {loading || !data ? (
           <DetailSkeleton />
@@ -189,8 +233,6 @@ export function DetailClient({ district, demo }: DetailClientProps) {
                 risk={data.risk}
                 verdictText={locale === "kk" ? data.verdict.textKk : data.verdict.textRu}
                 verdictIcon={verdictIcon}
-                chipToken={data.verdict.chipToken}
-                sparse={data.sparse}
                 onTapWhy={scrollToWhy}
                 tt={tt}
               />
@@ -207,42 +249,47 @@ export function DetailClient({ district, demo }: DetailClientProps) {
                 subtitle={tt("detail.pollenSubtitle")}
                 testId="section-pollen"
               >
-                <MetricCard
-                  name={tt("onb.trigger.wormwood")}
-                  value={data.pollen.wormwood}
-                  mode="word"
-                  levelWord={pollenLevelWord(data.pollen.wormwood, locale)}
-                />
-                <MetricCard
-                  name={tt("onb.trigger.ragweed")}
-                  value={data.pollen.ragweed}
-                  mode="word"
-                  levelWord={pollenLevelWord(data.pollen.ragweed, locale)}
-                />
-                <MetricCard
-                  name={tt("onb.trigger.birch")}
-                  value={data.pollen.birch}
-                  mode="word"
-                  levelWord={pollenLevelWord(data.pollen.birch, locale)}
-                />
+              <MetricCard
+                name={tt("onb.trigger.wormwood")}
+                value={data.pollen.wormwood}
+                mode="word"
+                levelWord={pollenLevelWord(data.pollen.wormwood, locale)}
+                className="tap"
+              />
+              <MetricCard
+                name={tt("onb.trigger.ragweed")}
+                value={data.pollen.ragweed}
+                mode="word"
+                levelWord={pollenLevelWord(data.pollen.ragweed, locale)}
+                className="tap"
+              />
+              <MetricCard
+                name={tt("onb.trigger.birch")}
+                value={data.pollen.birch}
+                mode="word"
+                levelWord={pollenLevelWord(data.pollen.birch, locale)}
+                className="tap"
+              />
               </MetricRow>
             </Reveal>
 
             {/* 5. Air row */}
             <Reveal delay={180}>
               <MetricRow subtitle={tt("detail.airSubtitle")} testId="section-air">
-                <MetricCard
-                  name="PM2.5"
-                  value={data.pm25.ug}
-                  mode="unit"
-                  unit={tt("unit.pm")}
-                />
-                <MetricCard
-                  name="PM10"
-                  value={data.pm10?.ug ?? 0}
-                  mode="unit"
-                  unit={tt("unit.pm")}
-                />
+              <MetricCard
+                name="PM2.5"
+                value={data.pm25.ug}
+                mode="unit"
+                unit={tt("unit.pm")}
+                className="tap"
+              />
+              <MetricCard
+                name="PM10"
+                value={data.pm10?.ug ?? 0}
+                mode="unit"
+                unit={tt("unit.pm")}
+                className="tap"
+              />
               </MetricRow>
             </Reveal>
 
@@ -252,6 +299,7 @@ export function DetailClient({ district, demo }: DetailClientProps) {
                 bars={bars}
                 selectedIndex={0}
                 title={tt("detail.forecast")}
+                className="tap-static shadow-soft"
               />
             </Reveal>
 
@@ -262,6 +310,8 @@ export function DetailClient({ district, demo }: DetailClientProps) {
                 breakdown={data.breakdown}
                 locale={locale}
                 tt={tt}
+                personalPm25={profile?.personalPm25}
+                diaryCount={diaryCount}
               />
             </Reveal>
 
@@ -273,6 +323,28 @@ export function DetailClient({ district, demo }: DetailClientProps) {
                 actions={actions}
                 locale={locale}
                 tt={tt}
+                anonId={anonId}
+                profile={profile}
+                lang={locale}
+                todayMarked={todayMarked}
+                onDiaryWritten={(personalPm25, count) => {
+                  setDiaryCount(count);
+                  setTodayMarked(true);
+                  if (profile) {
+                    const next: Profile =
+                      personalPm25 === null
+                        ? (() => {
+                            const { personalPm25: _drop, ...rest } = profile;
+                            return rest;
+                          })()
+                        : { ...profile, personalPm25 };
+                    saveProfile(next);
+                  }
+                  // Trigger the /api/me refetch so personalPm25/diaryCount are
+                  // re-confirmed from the server without a reload (§11.5).
+                  resetMeSync();
+                  void syncMe(anonId);
+                }}
               />
             </Reveal>
 
@@ -296,6 +368,22 @@ export function DetailClient({ district, demo }: DetailClientProps) {
 // (helpers inlined above; component subcomponents live below)
 
 type TFunc = ReturnType<typeof useT>;
+
+/** StaleNote — the friendly RU error-boundary line (Prompt 12.2). A small
+ *  caption row with an info icon; ink-60 text. Not a Detail section. */
+function StaleNote({ text }: { text: string }) {
+  return (
+    <div
+      data-testid="stale-banner"
+      className="flex items-center gap-2 px-1 text-caption"
+      style={{ color: "var(--ink-60)" }}
+      role="status"
+    >
+      <Info size={14} strokeWidth={2} className="shrink-0" />
+      <span>{text}</span>
+    </div>
+  );
+}
 
 /** Entrance motion: fade + 8px up, 240ms, with a per-section stagger delay. */
 export function Reveal({
@@ -350,82 +438,155 @@ export function Reveal({
   );
 }
 
-/** Hero — DESIGN §5.1.2. Lime organic blob hugging the left edge with the
- * num-hero risk + /10 inside; verdict icon + 2-line body/ink verdict to the
- * right; VerdictChip below. The blob tap scrolls to WhyCard. */
+/** Hero — DESIGN §5.1 item 2. The blob is an organic SVG shape CLIPPED by the
+ * screen's left edge: its center sits off-screen at (−15% width, 55% of 230),
+ * only the right lobe is visible (reaching ~62% of width). The right silhouette
+ * is a wavy arc (radius modulated ±4% by sin(3θ+1.2), 64 samples). TopoTexture
+ * contours share the SAME off-screen focus, so they radiate from the blob's
+ * origin. The row bleeds past the Screen's 20px left padding to x=0 (no light
+ * gap). The number group sits at the optical center of the visible lobe
+ * (~28% width). Blob tap scrolls to WhyCard. */
+const HERO_H = 230;
+const BLOB_SAMPLES = 64;
+const BLOB_AMP = 0.06; // ±6% silhouette modulation
+
+/** True-circle blob path: a single radius R centered off-screen left, modulated
+ * ±amp by sin(3θ + 1.2), 64 samples. Equal radii (no y-scale) keeps the visible
+ * lobe a fat round bulge instead of a pointed leaf. cx = −8% width keeps the
+ * center close enough that the lobe is wide and round; R = 0.53·w lands the
+ * rightmost point at ~45% of width. */
+function buildBlobPath(w: number, R: number, amp: number): string {
+  const cx = -0.08 * w; // off-screen left, close to the edge
+  const cy = 0.5 * HERO_H; // 115, vertically centered
+  let d = "";
+  for (let k = 0; k < BLOB_SAMPLES; k++) {
+    const theta = (k / BLOB_SAMPLES) * Math.PI * 2;
+    const r = R * (1 + amp * Math.sin(3 * theta + 1.2));
+    const x = cx + r * Math.cos(theta);
+    const y = cy + r * Math.sin(theta);
+    d += (k === 0 ? "M" : "L") + x.toFixed(2) + " " + y.toFixed(2) + " ";
+  }
+  return d + "Z";
+}
+
 export function Hero({
   risk,
   verdictText,
   verdictIcon: VerdictIcon,
-  chipToken,
-  sparse,
   onTapWhy,
   tt,
 }: {
   risk: number;
   verdictText: string;
   verdictIcon: LucideIcon;
-  chipToken: string;
-  sparse: boolean;
   onTapWhy: () => void;
   tt: TFunc;
 }) {
+  const btnRef = useRef<HTMLButtonElement | null>(null);
+  const [w, setW] = useState(410);
+
+  useEffect(() => {
+    const el = btnRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver((entries) => {
+      for (const e of entries) setW(Math.max(320, e.contentRect.width));
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const { blobPath, topoRings } = useMemo(() => {
+    const cx = -0.08 * w;
+    const cy = 0.5 * HERO_H;
+    const R = 0.53 * w; // cx + R = 0.45w → rightmost at 45% of width
+    return {
+      blobPath: buildBlobPath(w, R, BLOB_AMP),
+      // Dense contours (step ~14px) radiating from the blob's off-screen center.
+      topoRings: buildTopoRings({
+        focus: { x: cx, y: cy },
+        rings: 26,
+        seed: 1,
+        base: (i) => i * 14,
+      }),
+    };
+  }, [w]);
+
   return (
     <section data-testid="section-hero" className="flex flex-col">
       <button
+        ref={btnRef}
         type="button"
         onClick={onTapWhy}
         aria-label={`${tt("detail.why", { risk })}`}
-        className="relative block w-full text-left transition-transform duration-150 active:scale-[.98]"
-        style={{ height: 210, border: "none", padding: 0, background: "transparent", cursor: "pointer" }}
+        className="tap relative block text-left"
+        style={{
+          height: HERO_H,
+          border: "none",
+          padding: 0,
+          background: "transparent",
+          marginLeft: -20,
+          width: "calc(100% + 20px)",
+        }}
       >
-        {/* Lime organic blob, ~55% width, hugging the left edge */}
-        <div
-          className="absolute left-0 top-0 overflow-hidden"
-          style={{
-            width: "55%",
-            height: 210,
-            background: "var(--lime)",
-            borderRadius: "42% 58% 56% 44% / 50% 48% 52% 50%",
-          }}
+        {/* Blob + topo contours, sharing the off-screen center. The viewBox
+            matches measured pixels so the shape is a true circle (no stretch). */}
+        <svg
+          viewBox={`0 0 ${w} ${HERO_H}`}
+          preserveAspectRatio="xMidYMid meet"
+          className="absolute inset-0 h-full w-full"
+          aria-hidden
         >
-          <TopoTexture tone="ink" />
-          <div className="relative flex h-full items-center justify-center gap-1">
+          <defs>
+            <clipPath id="heroBlobClip">
+              <path d={blobPath} />
+            </clipPath>
+          </defs>
+          <path d={blobPath} fill="var(--lime)" />
+          <g
+            clipPath="url(#heroBlobClip)"
+            fill="none"
+            stroke="var(--ink)"
+            strokeOpacity={0.13}
+            strokeWidth={1}
+            strokeLinejoin="round"
+            strokeLinecap="round"
+          >
+            {topoRings.map((d, i) => (
+              <path key={i} d={d} vectorEffect="non-scaling-stroke" />
+            ))}
+          </g>
+        </svg>
+
+        {/* Number group at the optical center of the visible lobe (~21% width),
+            vertically centered */}
+        <div
+          className="absolute"
+          style={{ left: "21%", top: "50%", transform: "translate(-50%, -50%)" }}
+        >
+          <span className="inline-flex items-start gap-1">
             <span className="text-num-hero text-ink leading-none">{risk}</span>
-            <span
-              className="text-unit text-ink"
-              style={{ alignSelf: "flex-start", marginTop: 18 }}
-            >
+            <span className="text-unit text-ink leading-none">
               {tt("unit.risk")}
             </span>
-          </div>
+          </span>
         </div>
 
-        {/* Verdict icon + 2-line body/ink text to the right of the blob */}
+        {/* Verdict icon + 2-line body/ink text to the right of the blob,
+            vertically centered against it */}
         <div
-          className="absolute top-6 flex items-start gap-2"
-          style={{ left: "57%", right: 0 }}
+          className="absolute flex items-center gap-2"
+          style={{ left: "50%", right: 0, top: "50%", transform: "translateY(-50%)" }}
         >
           <span
             className="inline-flex shrink-0 items-center justify-center rounded-full"
-            style={{ width: 44, height: 44, background: "#EDEFF1", color: "var(--ink)" }}
+            style={{ width: 44, height: 44, background: "var(--icon-bg)", color: "var(--ink)" }}
           >
             <VerdictIcon size={20} strokeWidth={2} />
           </span>
-          <p className="text-body text-ink leading-[22px] line-clamp-2">
+          <p className="text-body text-ink leading-[22px]">
             {verdictText}
           </p>
         </div>
-
-        {/* Sparse-data note in the hero (§7) */}
-        {sparse ? (
-          <p
-            className="absolute bottom-0 left-0 text-caption leading-[18px]"
-            style={{ color: "var(--ink-40)" }}
-          >
-            {tt("detail.sparse")}
-          </p>
-        ) : null}
       </button>
 
       {/* VerdictChip below the blob */}
@@ -437,7 +598,7 @@ export function Hero({
 }
 
 /** ActionsCard — DESIGN §5.1.3. White card, h2 title «3 действия на завтра»,
- * three rows: 40px #EDEFF1 circle + reminder text. Reminder wording only (§8). */
+ * three rows: 40px --icon-bg circle + reminder text. Reminder wording only (§8). */
 export function ActionsCard({
   actions,
   locale,
@@ -450,7 +611,7 @@ export function ActionsCard({
   return (
     <section
       data-testid="section-actions"
-      className="bg-white shadow-card"
+      className="tap-static bg-white shadow-soft"
       style={{ borderRadius: "var(--r-card)", padding: 20 }}
     >
       <h2 className="text-h2 text-ink">{tt("detail.actionsTitle")}</h2>
@@ -461,7 +622,7 @@ export function ActionsCard({
             <div key={a.id} className="flex items-center gap-3">
               <span
                 className="inline-flex shrink-0 items-center justify-center rounded-full"
-                style={{ width: 40, height: 40, background: "#EDEFF1", color: "var(--ink)" }}
+                style={{ width: 40, height: 40, background: "var(--icon-bg)", color: "var(--ink)" }}
               >
                 <Icon size={20} strokeWidth={2} />
               </span>
@@ -510,21 +671,27 @@ function breakdownColor(key: "pm" | "pollen" | "wx"): string {
 }
 
 /** WhyCard — DESIGN §5.1.7. Slate card, stacked h-12 --r-full bar from
- * breakdown pct + legend rows with percentages. */
+ * breakdown pct + legend rows with percentages. When `personalPm25` is set,
+ * appends a `caption/white-70` line «Личный порог: … — найден по твоему
+ * дневнику за N дней» (PROMPTS §11.4) — still inside section 7, no new section. */
 export function WhyCard({
   risk,
   breakdown,
   locale,
   tt,
+  personalPm25,
+  diaryCount,
 }: {
   risk: number;
   breakdown: { key: "pm" | "pollen" | "wx"; labelRu: string; labelKk: string; pct: number }[];
   locale: Locale;
   tt: TFunc;
+  personalPm25?: number;
+  diaryCount?: number;
 }) {
   return (
     <section
-      className="flex flex-col"
+      className="tap-static shadow-soft flex flex-col"
       style={{ background: "var(--slate)", borderRadius: "var(--r-card)", padding: 20 }}
     >
       <h2 className="text-h2 text-white">{tt("detail.why", { risk })}</h2>
@@ -566,26 +733,166 @@ export function WhyCard({
           </div>
         ))}
       </div>
+
+      {/* Personal threshold line — only when the loop has closed (§11.4).
+          No new section: appended inside the existing WhyCard. */}
+      {typeof personalPm25 === "number" && personalPm25 > 0 ? (
+        <p
+          data-testid="section-why-threshold"
+          className="mt-4 text-caption"
+          style={{ color: "var(--white-70)" }}
+        >
+          {tt("detail.personalThreshold", {
+            pm: personalPm25,
+            n: diaryCount ?? 0,
+          })}
+        </p>
+      ) : null}
     </section>
   );
 }
 
 /** BotBanner + push-preview card — DESIGN §5.1.8. Lime block (bell + connect)
  * in AccentBlock language, then a white "message" card with tomorrow-07:30
- * notification text composed from the data (mock send). */
+ * notification text composed from the data (mock send).
+ *
+ * Connect: POST /api/link with the anonymous profile snapshot (so the bot's
+ * /start handler can compose the risk for this user), THEN open the Telegram
+ * deep link `t.me/<NEXT_PUBLIC_TG_BOT>?start=<anonId>`. The upsert must
+ * succeed before the deep link opens, otherwise /start has no profile. */
 export function BotBanner({
   districtName,
   data,
   actions,
   locale,
   tt,
+  anonId,
+  profile,
+  lang,
+  todayMarked,
+  onDiaryWritten,
 }: {
   districtName: string;
   data: RiskResponse;
   actions: ActionEntry[];
   locale: Locale;
   tt: TFunc;
+  anonId: string;
+  profile: Profile | null;
+  lang: Locale;
+  todayMarked: boolean;
+  onDiaryWritten?: (personalPm25: number | null, diaryCount: number) => void;
 }) {
+  const [connecting, setConnecting] = useState(false);
+  const [diaryOpen, setDiaryOpen] = useState(false);
+  const [diaryStatus, setDiaryStatus] = useState<DiaryStatus>("idle");
+  const [diaryCount, setDiaryCount] = useState(0);
+  const [infoOpen, setInfoOpen] = useState(false);
+  const infoWrapRef = useRef<HTMLDivElement | null>(null);
+
+  // Close the info popover on an outside tap / Escape. The popover lives above
+  // the capsule; tapping anywhere else dismisses it.
+  useEffect(() => {
+    if (!infoOpen) return;
+    function onDown(e: MouseEvent | TouchEvent): void {
+      const el = infoWrapRef.current;
+      if (el && e.target instanceof Node && !el.contains(e.target)) {
+        setInfoOpen(false);
+      }
+    }
+    function onKey(e: KeyboardEvent): void {
+      if (e.key === "Escape") setInfoOpen(false);
+    }
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("touchstart", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("touchstart", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [infoOpen]);
+
+  async function onConnect(): Promise<void> {
+    if (connecting) return;
+    if (!anonId || !profile) return;
+    const bot = process.env.NEXT_PUBLIC_TG_BOT ?? "";
+    if (!bot) return;
+    setConnecting(true);
+    try {
+      await fetch("/api/link", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ anonId, profile, lang }),
+      });
+    } catch {
+      /* even if the upsert fails, still open the bot — /start will retry */
+    } finally {
+      setConnecting(false);
+    }
+    const url = `https://t.me/${bot}?start=${encodeURIComponent(anonId)}`;
+    if (typeof window !== "undefined") window.open(url, "_blank", "noopener");
+  }
+
+  /** In-app diary fallback (PROMPTS §11.5): the capsule opens a bottom sheet
+   *  with the same three buttons as the Telegram evening question → POST
+   *  /api/diary (same table, same recompute). The client sends the risk + pm25
+   *  it currently shows (the "what was shown" truth); the server upserts
+   *  today's row (one entry per day — repeat taps overwrite) and recomputes the
+   *  personal PM2.5 threshold. On success the sheet swaps to a confirmation
+   *  («Записано ✓» / «Обновлено ✓» + «N/7 дней до личного порога») and holds
+   *  that confirmation for 1400ms BEFORE sliding the sheet down — so the user
+   *  sees the checkmark inside the sheet, not a silent close. On error it
+   *  shows a loud error and stays open. No page reload anywhere. */
+  async function onDiary(feeling: 1 | 2 | 3): Promise<void> {
+    if (diaryStatus === "saving" || !anonId || !profile) return;
+    setDiaryStatus("saving");
+    try {
+      const r = await fetch("/api/diary", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          anonId,
+          feeling,
+          riskShown: data.risk,
+          pm25: data.pm25.ug,
+        }),
+      });
+      if (!r.ok) {
+        const errText = await r.text();
+        throw new Error(`POST /api/diary ${r.status}: ${errText}`);
+      }
+      const j = (await r.json()) as {
+        personalPm25: number | null;
+        diaryCount: number;
+        updated: boolean;
+      };
+      setDiaryCount(j.diaryCount);
+      onDiaryWritten?.(j.personalPm25, j.diaryCount);
+      setDiaryStatus(j.updated ? "updated" : "saved");
+      // Hold the confirmation state inside the sheet for 1400ms, THEN slide
+      // the sheet down (260ms transition). No reload — the page stays put.
+      setTimeout(() => {
+        setDiaryOpen(false);
+        setTimeout(() => setDiaryStatus("idle"), 260);
+      }, 1400);
+    } catch (err) {
+      console.error("[DemAI] diary write failed:", err);
+      setDiaryStatus("error");
+    }
+  }
+
+  function openDiary(): void {
+    setDiaryStatus("idle");
+    setDiaryOpen(true);
+  }
+
+  function closeDiary(): void {
+    if (diaryStatus === "saving") return;
+    setDiaryOpen(false);
+    setTimeout(() => setDiaryStatus("idle"), 260);
+  }
+
   const chipLabel = locale === "kk" ? data.verdict.chipKk : data.verdict.chipRu;
   const firstAction = actions[0];
   const firstActionText = firstAction
@@ -620,8 +927,10 @@ export function BotBanner({
           </div>
           <button
             type="button"
-            className="shrink-0 rounded-full text-chip text-white transition-transform duration-150 active:scale-[.98]"
-            style={{ background: "var(--ink)", height: 48, padding: "0 20px", border: "none", cursor: "pointer" }}
+            onClick={onConnect}
+            disabled={connecting || !anonId || !profile}
+            className="tap shrink-0 rounded-full text-chip text-white disabled:opacity-50"
+            style={{ background: "var(--ink)", height: 48, padding: "0 20px", border: "none" }}
           >
             {tt("detail.botConnect")}
           </button>
@@ -631,7 +940,7 @@ export function BotBanner({
       {/* Push preview "message" card */}
       <div
         data-testid="section-bot-push"
-        className="bg-white shadow-card"
+        className="bg-white shadow-soft"
         style={{ borderRadius: "var(--r-inner)", padding: 16 }}
       >
         <div
@@ -643,6 +952,86 @@ export function BotBanner({
         </div>
         <p className="mt-2 text-body text-ink leading-[22px]">{pushText}</p>
       </div>
+
+      {/* In-app diary fallback (§11.5): a visible capsule button inside the
+          existing BotBanner section — SecondaryButton language (white pill,
+          ink text, --shadow-soft), full-width below the push preview. No new
+          section, no new page. Opens the DiarySheet bottom sheet. The ⓘ at the
+          right end of the label opens an explanatory popover (closes on outside
+          tap). Under the capsule, a persistent «Сегодня: отмечено ✓» caption
+          appears once today's row exists — lasting evidence the write worked. */}
+      <div className="flex flex-col gap-2">
+        <div ref={infoWrapRef} className="relative">
+          <button
+            type="button"
+            onClick={openDiary}
+            disabled={!anonId || !profile}
+            className="tappable flex w-full items-center justify-center gap-2 rounded-full bg-white text-chip text-ink shadow-soft disabled:opacity-50"
+            style={{ height: 48, border: "none", padding: "0 16px", fontWeight: 600 }}
+          >
+            <span>{tt("detail.diaryLink")}</span>
+            <span
+              role="button"
+              tabIndex={0}
+              aria-label="info"
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                setInfoOpen((v) => !v);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  setInfoOpen((v) => !v);
+                }
+              }}
+              className="tappable inline-flex shrink-0 items-center justify-center rounded-full"
+              style={{ width: 24, height: 24, color: "var(--ink-40)" }}
+            >
+              <Info size={16} strokeWidth={2} />
+            </span>
+          </button>
+
+          {infoOpen ? (
+            <div
+              role="dialog"
+              aria-label={tt("detail.diaryLink")}
+              data-testid="diary-info-popover"
+              className="absolute bottom-full left-1/2 z-10 mb-2 -translate-x-1/2 bg-white shadow-soft"
+              style={{
+                borderRadius: "var(--r-inner)",
+                padding: 16,
+                maxWidth: 300,
+                width: "max-content",
+              }}
+            >
+              <p className="text-body text-ink" style={{ lineHeight: "22px" }}>
+                {tt("detail.diaryInfo")}
+              </p>
+            </div>
+          ) : null}
+        </div>
+
+        {todayMarked ? (
+          <p
+            data-testid="diary-today-caption"
+            className="text-center text-caption"
+            style={{ color: "var(--ink-60)" }}
+          >
+            {tt("detail.diaryToday")}
+          </p>
+        ) : null}
+      </div>
+
+      <DiarySheet
+        open={diaryOpen}
+        status={diaryStatus}
+        diaryCount={diaryCount}
+        tt={tt}
+        onClose={closeDiary}
+        onPick={onDiary}
+      />
     </section>
   );
 }

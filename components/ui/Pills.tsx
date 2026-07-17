@@ -1,18 +1,22 @@
-import { ReactNode } from "react";
+import { CSSProperties, ReactNode } from "react";
 
 /**
- * PillBadge — DESIGN §5.2. White pill, chip text. Used inline with the
- * Home H1 ("Сейчас" / "Live"). Floats on slate via --shadow-card.
+ * PillBadge — DESIGN §5.2. Compact white pill, chip text (weight 600), used
+ * inline as the leading element of the Home H1 ("Сейчас" / "Real-time").
+ * h≈26, px 12, r-full, flat (no shadow) so it reads as an inline chip on the
+ * heading's first line, not a full-width bar.
  */
 export interface PillBadgeProps {
   children: ReactNode;
   className?: string;
+  style?: CSSProperties;
 }
 
-export function PillBadge({ children, className = "" }: PillBadgeProps) {
+export function PillBadge({ children, className = "", style }: PillBadgeProps) {
   return (
     <span
-      className={`inline-flex items-center rounded-full bg-white px-3 py-1 text-chip text-ink shadow-card ${className}`}
+      className={`inline-flex items-center rounded-full bg-white px-3 text-chip text-ink ${className}`}
+      style={{ height: 30, ...style }}
     >
       {children}
     </span>

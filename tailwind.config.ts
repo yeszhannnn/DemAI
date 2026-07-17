@@ -15,6 +15,7 @@ const config: Config = {
         slate: "#899FB0",
         "bg-light": "#F1F2F4",
         "card-peek": "#8AA0B1",
+        "icon-bg": "#EDEFF1",
         risk: {
           low: "#BFE95C",
           mid: "#F6D24E",
@@ -29,6 +30,7 @@ const config: Config = {
       },
       boxShadow: {
         card: "0 12px 28px rgba(33,33,33,.10)",
+        soft: "0 6px 16px rgba(33,33,33,.05)",
         float: "0 10px 24px rgba(33,33,33,.18)",
       },
       fontFamily: {

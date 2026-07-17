@@ -1,4 +1,4 @@
-import { ChevronLeft, Grip, Home, LocateFixed, Search, Settings } from "lucide-react";
+import { Home, LayoutGrid, LocateFixed, Search, Settings } from "lucide-react";
 import { IconCircle } from "./IconCircle";
 
 /**
@@ -12,11 +12,12 @@ export interface TopBarProps {
   title: string;
   subtitle?: string;
   avatarUrl?: string;
-  onBack?: () => void;
-  onMenu?: () => void;
+  onHome?: () => void;
   onSearch?: () => void;
   onLocate?: () => void;
   onSettings?: () => void;
+  /** Extra classes for the detail variant's grid icon circle (§7 tap states). */
+  iconClassName?: string;
 }
 
 export function TopBar({
@@ -24,11 +25,11 @@ export function TopBar({
   title,
   subtitle,
   avatarUrl,
-  onBack,
-  onMenu,
+  onHome,
   onSearch,
   onLocate,
   onSettings,
+  iconClassName = "",
 }: TopBarProps) {
   if (variant === "map") {
     return (
@@ -77,12 +78,19 @@ export function TopBar({
     );
   }
 
-  // detail
+  // detail — left grid button (→ Home) + centered location pill, nothing on the right.
   return (
-    <div className="flex items-center justify-between gap-3">
-      <IconCircle icon={ChevronLeft} variant="white" size={44} aria-label="Назад" onClick={onBack} className="shadow-card" />
+    <div className="relative flex items-center gap-3">
+      <IconCircle
+        icon={LayoutGrid}
+        variant="white"
+        size={44}
+        aria-label="Главная"
+        onClick={onHome}
+        className={`shadow-card ${iconClassName}`}
+      />
       <div
-        className="flex min-w-0 items-center gap-2.5 rounded-full bg-white px-1.5 py-1.5 shadow-card"
+        className="pointer-events-none absolute left-1/2 flex min-w-0 -translate-x-1/2 items-center gap-2.5 rounded-full bg-white px-1.5 py-1.5 shadow-card"
         style={{ height: 48 }}
       >
         <IconCircle icon={Home} variant="black" size={36} aria-label="Дом" />
@@ -95,7 +103,6 @@ export function TopBar({
           ) : null}
         </div>
       </div>
-      <IconCircle icon={Grip} variant="white" size={44} aria-label="Меню" onClick={onMenu} className="shadow-card" />
     </div>
   );
 }

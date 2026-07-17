@@ -25,13 +25,21 @@
   --risk-high: #F09A3E;
   --risk-severe: #E8603C;
 
-  /* 1.4 Map */
+  /* 1.4 Map (full §1.4 palette — the only place map hex/rgba literals live) */
+  --map-land: #8095A6;
+  --map-land-2: #74889A;      /* blocks / built-up */
   --map-water: #2F3D4C;
-  --map-land: #7E93A4;
-  --map-park: #667B8E;
-  --map-road: rgba(255, 255, 255, 0.55);
-  --map-road-major: rgba(255, 255, 255, 0.85);
-  --map-label: rgba(255, 255, 255, 0.65);
+  --map-park: #6B8090;
+  --map-road-minor: rgba(255, 255, 255, 0.4);
+  --map-road-mid: rgba(255, 255, 255, 0.62);
+  --map-road-major: #E8EEF2;
+  --map-label-text: #E4EAEE;
+  --map-label-halo: rgba(47, 61, 76, 0.65);
+  --map-boundary: rgba(255, 255, 255, 0.14);
+  --map-select-outline: rgba(255, 255, 255, 0.45); /* tapped-district outline on slate */
+
+  /* §3.4 light icon-circle surface (the only sanctioned light surface hex) */
+  --icon-bg: #EDEFF1;
 
   /* 3.1 Radii */
   --r-card: 28px;
@@ -41,7 +49,13 @@
 
   /* 3.2 Shadows */
   --shadow-card: 0 12px 28px rgba(33, 33, 33, 0.1);
+  --shadow-soft: 0 6px 16px rgba(33, 33, 33, 0.05);
   --shadow-float: 0 10px 24px rgba(33, 33, 33, 0.18);
+
+  /* 1.2 / §7 — interactive state tokens (hover lift) */
+  --lime-16: rgba(234, 252, 95, 0.16);   /* selected OptionCard wash */
+  --shadow-tap: 0 16px 32px rgba(33, 33, 33, 0.14); /* hover lift shadow */
+  --ring-ink-8: 0 0 0 1px rgba(33, 33, 33, 0.08);  /* hover 1px ink/8 ring */
 
   /* Desktop frame behind the 430px phone column (sanctioned by the setup prompt) */
   --bg-page: #E8EAEC;
@@ -62,4 +76,142 @@ body {
   font-family: var(--font-onest), "Onest", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+}
+
+/* The root html element's default white canvas was showing through at the
+   bottom of the Detail screen on mobile browsers with a dynamic address bar:
+   the Screen column uses min-height:100dvh while html/body use percentage
+   heights, so 100dvh can exceed 100% and reveal the html background. Paint
+   the html canvas with --bg-light so the gap (if any) matches the page — no
+   stray white strip at the page bottom. */
+html {
+  background: var(--bg-light);
+}
+
+/* 7. Interactive states — hover lift, press scale(.97).
+   .tap        : tappable (cursor pointer + lift + press scale)
+   .tap-static : static content card (hover lift only — no pointer) */
+.tap,
+.tap-static {
+  transition: transform 120ms ease-out, box-shadow 120ms ease-out;
+  will-change: transform;
+}
+.tap {
+  cursor: pointer;
+}
+.tap:hover,
+.tap-static:hover {
+  transform: translateY(-2px);
+}
+.tap:active {
+  transform: scale(0.97);
+}
+@media (prefers-reduced-motion: reduce) {
+  .tap,
+  .tap-static {
+    transition: none !important;
+    animation: none !important;
+  }
+  .tap:hover,
+  .tap-static:hover,
+  .tap:active {
+    transform: none !important;
+  }
+}
+
+/* Onboarding step transitions (DESIGN §7).
+   The header + options slide as one panel. Forward: enter from +24px,
+   exit to -24px. Back: inverted. 260ms cubic-bezier(.32,.72,.29,.99).
+   Under prefers-reduced-motion the keyframes are neutralised below. */
+@keyframes onb-enter-fwd {
+  from { opacity: 0; transform: translateX(24px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes onb-exit-fwd {
+  from { opacity: 1; transform: translateX(0); }
+  to   { opacity: 0; transform: translateX(-24px); }
+}
+@keyframes onb-enter-back {
+  from { opacity: 0; transform: translateX(-24px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes onb-exit-back {
+  from { opacity: 1; transform: translateX(0); }
+  to   { opacity: 0; transform: translateX(24px); }
+}
+
+/* Landing entrance — DESIGN §7 (fade + 8px up, 240ms, 60ms stagger).
+   Applied per section via inline animation-delay; the keyframe itself
+   is neutralised under prefers-reduced-motion. */
+@keyframes landing-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.landing-enter {
+  animation: landing-enter 240ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @keyframes onb-enter-fwd { from { opacity: 1; } to { opacity: 1; } }
+  @keyframes onb-exit-fwd  { from { opacity: 0; } to { opacity: 0; } }
+  @keyframes onb-enter-back { from { opacity: 1; } to { opacity: 1; } }
+  @keyframes onb-exit-back  { from { opacity: 0; } to { opacity: 0; } }
+  /* ProgressDots pill: instant glide (DESIGN §7). */
+  [data-onb-pill] { transition: none !important; }
+  /* Landing entrance: instant (DESIGN §7). */
+  .landing-enter { animation: none !important; }
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+ * §7 interactive states — shared `.tappable` utility (CSS-only, no deps).
+ *   • pointer-only hover lift: translateY(-2px) + --shadow-tap + 1px ink/8
+ *     ring, 180ms ease-out — wrapped in @media (hover:hover) so touch never
+ *     sticks in a hovered state.
+ *   • press: scale(.97), 90ms ease-out — defined AFTER hover so :active wins
+ *     the source-order tie on hover-capable pointers.
+ *   • PrimaryButton hover adds filter brightness(1.04) on top of the lift
+ *     via the `.tappable--primary` modifier.
+ *   • prefers-reduced-motion: transitions/animations off, states instant.
+ * ───────────────────────────────────────────────────────────────────── */
+.tappable {
+  transition:
+    transform 180ms ease-out,
+    box-shadow 180ms ease-out,
+    filter 180ms ease-out,
+    background-color 180ms ease-out;
+  will-change: transform, box-shadow;
+}
+
+@media (hover: hover) {
+  .tappable:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-tap), var(--ring-ink-8);
+  }
+  .tappable--primary:hover {
+    filter: brightness(1.04);
+  }
+  /* Ghost/peek add card on --bg-home: lift only, no hover shadow or ring. */
+  .tappable--ghost:hover {
+    box-shadow: none;
+  }
+}
+
+/* Defined after the hover block so :active wins the equal-specificity tie. */
+.tappable:active {
+  transform: scale(0.97);
+  transition: transform 90ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tappable,
+  .tappable--primary {
+    transition: none !important;
+    animation: none !important;
+  }
+  .tappable:hover,
+  .tappable:active {
+    transform: none !important;
+    box-shadow: inherit;
+    filter: none !important;
+  }
 }

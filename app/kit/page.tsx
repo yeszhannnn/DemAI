@@ -125,14 +125,14 @@ export default function KitPage() {
         {/* 3. PillBadge + GlassPill */}
         <Section title="PillBadge / GlassPill">
           <div className="flex flex-wrap items-center gap-3">
-            <PillBadge>Сейчас</PillBadge>
+            <PillBadge>Real-time</PillBadge>
             <PillBadge>Live</PillBadge>
             <div className="flex-1" />
             <GlassPill>Мои места ⌄</GlassPill>
           </div>
           <div className="rounded-card p-4" style={{ background: "var(--bg-home)" }}>
             <div className="flex items-center gap-3">
-              <PillBadge>Сейчас</PillBadge>
+              <PillBadge>Real-time</PillBadge>
               <GlassPill>Мои места ⌄</GlassPill>
             </div>
           </div>

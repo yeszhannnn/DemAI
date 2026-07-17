@@ -23,7 +23,7 @@ export function PrimaryButton({ children, onClick, className = "", disabled }: B
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`w-full rounded-full text-h2 text-ink transition-transform duration-150 active:scale-[.98] disabled:opacity-50 ${className}`}
+      className={`tappable tappable--primary w-full rounded-full text-h2 text-ink disabled:opacity-50 ${className}`}
       style={{ height: 56, background: "var(--lime)", border: "none", padding: "0 20px" }}
     >
       {children}
@@ -37,7 +37,7 @@ export function SecondaryButton({ children, onClick, className = "", disabled }:
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`w-full rounded-full bg-white text-h2 text-ink shadow-card transition-transform duration-150 active:scale-[.98] disabled:opacity-50 ${className}`}
+      className={`tappable w-full rounded-full bg-white text-h2 text-ink shadow-card disabled:opacity-50 ${className}`}
       style={{ height: 56, border: "none", padding: "0 20px" }}
     >
       {children}
@@ -59,12 +59,13 @@ export function OptionCard({ children, selected, icon: Icon, onClick, className 
       type="button"
       onClick={onClick}
       aria-pressed={selected}
-      className={`flex w-full items-center gap-3 bg-white transition-transform duration-150 active:scale-[.98] ${className}`}
+      className={`tappable flex w-full items-center gap-3 ${className}`}
       style={{
         height: 64,
         borderRadius: "var(--r-inner)",
         padding: "0 16px",
         border: selected ? "2px solid var(--ink)" : "2px solid transparent",
+        background: selected ? "var(--lime-16)" : "var(--white)",
         boxShadow: selected ? "none" : "var(--shadow-card)",
         cursor: "pointer",
       }}
@@ -72,7 +73,7 @@ export function OptionCard({ children, selected, icon: Icon, onClick, className 
       {Icon ? (
         <span
           className="inline-flex shrink-0 items-center justify-center rounded-full"
-          style={{ width: 40, height: 40, background: "#EDEFF1", color: "var(--ink)" }}
+          style={{ width: 40, height: 40, background: "var(--icon-bg)", color: "var(--ink)" }}
         >
           <Icon size={20} strokeWidth={2} />
         </span>
@@ -95,23 +96,63 @@ export interface ProgressDotsProps {
   className?: string;
 }
 
+/**
+ * ProgressDots — DESIGN §7 (updated). A fixed row of grey dots plus ONE
+ * absolutely-positioned lime pill that translateX's to the active slot and
+ * morphs width 6↔20px, 260ms cubic-bezier(.32,.72,.29,.99). The pill is the
+ * same DOM node across steps (it never unmounts) so the browser interpolates
+ * the glide instead of jumping. Under prefers-reduced-motion the transition
+ * is zeroed (instant) via the CSS below.
+ *
+ * Geometry: each dot is 6px, gap is 8px → stride 14px. The active pill is 20px
+ * wide, centred on the active dot: pill-left = current·14 − 7.
+ */
+const DOT = 6;
+const GAP = 8;
+const STRIDE = DOT + GAP; // 14
+const PILL_W = 20;
+
 export function ProgressDots({ total, current, className = "" }: ProgressDotsProps) {
+  const pillLeft = current * STRIDE - (PILL_W - DOT) / 2; // centre on active dot
+  const rowWidth = total * DOT + (total - 1) * GAP;
   return (
-    <div className={`flex items-center gap-2 ${className}`} aria-label={`Шаг ${current + 1} из ${total}`}>
-      {Array.from({ length: total }).map((_, i) => {
-        const active = i === current;
-        return (
-          <span
-            key={i}
-            className="block"
-            style={
-              active
-                ? { width: 20, height: 6, borderRadius: "var(--r-full)", background: "var(--lime)" }
-                : { width: 6, height: 6, borderRadius: "var(--r-full)", background: "var(--white)" }
-            }
-          />
-        );
-      })}
+    <div
+      className={`relative ${className}`}
+      style={{ width: rowWidth, height: DOT }}
+      aria-label={`Шаг ${current + 1} из ${total}`}
+    >
+      {Array.from({ length: total }).map((_, i) => (
+        <span
+          key={i}
+          className="absolute block"
+          style={{
+            left: i * STRIDE,
+            width: DOT,
+            height: DOT,
+            borderRadius: "var(--r-full)",
+            background: "var(--white)",
+            opacity: 0.5,
+          }}
+        />
+      ))}
+      {/* The single lime pill — same node across steps; it glides + width-morphs. */}
+      <span
+        aria-hidden
+        data-onb-pill
+        className="absolute block"
+        style={{
+          left: 0,
+          top: 0,
+          width: PILL_W,
+          height: DOT,
+          borderRadius: "var(--r-full)",
+          background: "var(--lime)",
+          transform: `translateX(${pillLeft}px)`,
+          transition:
+            "transform 260ms cubic-bezier(.32,.72,.29,.99), width 260ms cubic-bezier(.32,.72,.29,.99)",
+        }}
+      />
     </div>
   );
 }
+

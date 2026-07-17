@@ -69,7 +69,13 @@ describe("fPollen / fWx / multiplier", () => {
     expect(fWx({ windMs: 5, humidity: 30, precipMm: 5, tempC: 5 })).toBe(0);
   });
   it("applies the sensitivity multiplier per diagnosis", () => {
-    const base = { who: "self", triggers: [], district: "x" } as Profile;
+    const base: Profile = {
+      who: "self",
+      triggers: [],
+      district: "x",
+      diagnosis: "pollinosis",
+      sensitive: false,
+    };
     expect(multiplier({ ...base, diagnosis: "asthma", sensitive: false })).toBe(
       1.15,
     );
@@ -213,13 +219,13 @@ describe("computeRisk — TVEP integration", () => {
   });
 
   it("6. personalPm25 shifts the result for the same ambient PM2.5", () => {
-    const base = {
+    const base: Profile = {
       who: "self",
       diagnosis: "asthma",
       triggers: ["pm25"],
       district: "Бостандық",
       sensitive: false,
-    } as const;
+    };
     const inputs: Inputs = {
       pm25: 30,
       pollen: noPollen,

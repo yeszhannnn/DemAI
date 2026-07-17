@@ -7,17 +7,27 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "lint:design": "node scripts/lint-design.mjs",
+    "icons": "node scripts/gen-icons.mjs",
     "test": "vitest run",
+    "e2e": "playwright test",
     "pollen:print": "tsx scripts/pollen-print.ts",
-    "snapshot": "tsx scripts/make-snapshot.ts"
+    "snapshot": "tsx scripts/make-snapshot.ts",
+    "tg:dev": "tsx scripts/tg-dev.ts",
+    "seed:diary": "tsx scripts/seed-diary.ts"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.110.7",
+    "grammy": "^1.45.1",
+    "h3-js": "^4.5.0",
     "lucide-react": "^1.25.0",
+    "maplibre-gl": "^5.24.0",
     "next": "16.2.10",
     "react": "19.2.4",
     "react-dom": "19.2.4"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

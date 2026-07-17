@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import {
   Baby,
@@ -23,9 +23,10 @@ import {
   PrimaryButton,
   ProgressDots,
 } from "@/components/ui/Onboarding";
-import { useProfile } from "@/lib/useProfile";
-import { setLocale, t, useLocale, useT, type Locale } from "@/lib/i18n";
+import { getPlaces, setPlaces, useProfile } from "@/lib/useProfile";
+import { setLocale, t, useLocale, useT, localeWasPicked, type Locale } from "@/lib/i18n";
 import { DISTRICTS } from "@/data/districts";
+import { isDemo } from "@/lib/demo";
 import type { Diagnosis, Profile, Trigger } from "@/lib/risk";
 
 const TOTAL_STEPS = 5;
@@ -67,7 +68,15 @@ export default function OnboardingPage() {
 function OnboardingFlow() {
   const router = useRouter();
   const { profile, isComplete, saveProfile } = useProfile();
-  const [step, setStep] = useState(0);
+  const reduceMotion = usePrefersReducedMotion();
+  // §5.5: if the user picked a locale on the landing, skip S0 and start at S1.
+  const [step, setStep] = useState(() => (localeWasPicked() ? 1 : 0));
+  // Panel transition state (DESIGN §7). `prevStep` is the panel exiting while
+  // `step` is the panel entering; `direction` picks the keyframe pair.
+  const [prevStep, setPrevStep] = useState<number | null>(null);
+  const [direction, setDirection] = useState<1 | -1>(1);
+  const [animating, setAnimating] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Draft state (saved only at the finish tap).
   const [who, setWho] = useState<Profile["who"] | null>(null);
@@ -81,9 +90,39 @@ function OnboardingFlow() {
   // Returning-user guard (§7): a complete profile never re-runs onboarding.
   useEffect(() => {
     if (isComplete && profile?.district) {
-      router.replace(`/d/${profile.district}`);
+      const demo = isDemo();
+      router.replace(`/d/${profile.district}${demo ? "?demo=1" : ""}`);
     }
   }, [isComplete, profile, router]);
+
+  useEffect(
+    () => () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    },
+    [],
+  );
+
+  /**
+   * Advance the flow one step in `dir` (1 = forward, −1 = back). Guards a
+   * double-advance: while a 260ms transition is in flight, further calls are
+   * ignored — so a rapid double-click advances exactly one step. Under
+   * prefers-reduced-motion the swap is instant (no exit panel, no guard).
+   */
+  function goTo(next: number, dir: 1 | -1) {
+    if (next === step) return;
+    if (animating && !reduceMotion) return;
+    setDirection(dir);
+    if (!reduceMotion) {
+      setPrevStep(step);
+      setAnimating(true);
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => {
+        setPrevStep(null);
+        setAnimating(false);
+      }, 260);
+    }
+    setStep(next);
+  }
 
   function finish(district: string) {
     const p: Profile = {
@@ -95,13 +134,25 @@ function OnboardingFlow() {
       sensitive: diagnosis === "unknown",
     };
     saveProfile(p);
-    router.replace(`/d/${district}`);
+    // Auto-create «Дом» from the chosen district (PROMPTS §8.1). Seed only
+    // when the places list is empty so a re-run never duplicates.
+    if (getPlaces().length === 0) {
+      const id =
+        typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      setPlaces([{ id, label: t("place.home"), district }]);
+    }
+    // Preserve the demo flag so a demo onboarding lands on the demo Detail
+    // screen (zero network) — the demo must not depend on venue Wi-Fi (§7).
+    const demo = isDemo();
+    router.replace(`/d/${district}${demo ? "?demo=1" : ""}`);
   }
 
   function selectDiagnosis(d: Diagnosis) {
     setDiagnosis(d);
     if (who === "self" && d !== "unknown") {
-      setStep(3);
+      goTo(3, 1);
     }
   }
 
@@ -113,7 +164,7 @@ function OnboardingFlow() {
 
   function pickForMe() {
     setTriggers(triggersForDiagnosis(diagnosis ?? "unknown"));
-    setStep(4);
+    goTo(4, 1);
   }
 
   function useGeolocation() {
@@ -146,6 +197,60 @@ function OnboardingFlow() {
     diagnosis !== null && (who !== "parent" || childAge > 0);
   const showContinueS2 = who === "parent" || diagnosis === "unknown";
 
+  const enterName = direction === 1 ? "onb-enter-fwd" : "onb-enter-back";
+  const exitName = direction === 1 ? "onb-exit-fwd" : "onb-exit-back";
+  const EASING = "cubic-bezier(.32,.72,.29,.99)";
+  const animStyle = (name: string): CSSProperties | undefined =>
+    reduceMotion ? undefined : { animation: `${name} 260ms ${EASING} both` };
+
+  function renderStep(s: number): ReactNode {
+    switch (s) {
+      case 0:
+        return (
+          <Step0
+            onPick={(l) => {
+              setLocale(l);
+              goTo(1, 1);
+            }}
+          />
+        );
+      case 1:
+        return <Step1 onPick={(w) => { setWho(w); goTo(2, 1); }} />;
+      case 2:
+        return (
+          <Step2
+            who={who}
+            diagnosis={diagnosis}
+            childAge={childAge}
+            setChildAge={setChildAge}
+            selectDiagnosis={selectDiagnosis}
+            showContinue={showContinueS2}
+            canContinue={canContinueS2}
+            onContinue={() => goTo(3, 1)}
+          />
+        );
+      case 3:
+        return (
+          <Step3
+            triggers={triggers}
+            toggle={toggleTrigger}
+            pickForMe={pickForMe}
+            onContinue={() => goTo(4, 1)}
+          />
+        );
+      case 4:
+        return (
+          <Step4
+            geoStatus={geoStatus}
+            onPickDistrict={finish}
+            onGeolocate={useGeolocation}
+          />
+        );
+      default:
+        return null;
+    }
+  }
+
   return (
     <div
       className="flex w-full justify-center"
@@ -153,52 +258,36 @@ function OnboardingFlow() {
     >
       <div
         className="relative w-full max-w-[430px] px-5"
-        style={{ minHeight: "100dvh", background: "var(--bg-home)" }}
+        style={{
+          minHeight: "100dvh",
+          background: "var(--bg-home)",
+          overflowX: "hidden",
+        }}
       >
         <TopBar
           step={step}
-          onBack={() => setStep((s) => Math.max(0, s - 1))}
+          onBack={() => goTo(Math.max(0, step - 1), -1)}
         />
 
-        <main className="flex flex-col pb-32" style={{ minHeight: "60dvh" }}>
-          {step === 0 && (
-            <Step0
-              onPick={(l) => {
-                setLocale(l);
-                setStep(1);
-              }}
-            />
+        <main className="relative flex flex-col pb-32" style={{ minHeight: "60dvh" }}>
+          {/* Exiting panel: absolutely positioned overlay, on top so it can
+              slide out over the entering panel, but pointer-events:none so
+              taps fall through to the (tappable) entering panel below. */}
+          {prevStep !== null && (
+            <div
+              key={prevStep}
+              className="absolute inset-0"
+              style={{ ...animStyle(exitName), pointerEvents: "none", zIndex: 2 }}
+            >
+              {renderStep(prevStep)}
+            </div>
           )}
-          {step === 1 && (
-            <Step1 onPick={(w) => { setWho(w); setStep(2); }} />
-          )}
-          {step === 2 && (
-            <Step2
-              who={who}
-              diagnosis={diagnosis}
-              childAge={childAge}
-              setChildAge={setChildAge}
-              selectDiagnosis={selectDiagnosis}
-              showContinue={showContinueS2}
-              canContinue={canContinueS2}
-              onContinue={() => setStep(3)}
-            />
-          )}
-          {step === 3 && (
-            <Step3
-              triggers={triggers}
-              toggle={toggleTrigger}
-              pickForMe={pickForMe}
-              onContinue={() => setStep(4)}
-            />
-          )}
-          {step === 4 && (
-            <Step4
-              geoStatus={geoStatus}
-              onPickDistrict={finish}
-              onGeolocate={useGeolocation}
-            />
-          )}
+          {/* Entering panel: in flow, defines the container height (stable —
+              no layout jump between steps). Keyed so it remounts per step and
+              the enter keyframe runs. */}
+          <div key={step} className="relative" style={animStyle(enterName)}>
+            {renderStep(step)}
+          </div>
         </main>
 
         <TapCounter />
@@ -552,6 +641,28 @@ function useTapsEnabled(): boolean {
     () =>
       typeof window !== "undefined" &&
       new URLSearchParams(window.location.search).get("taps") === "1",
+    () => false,
+  );
+}
+
+/**
+ * usePrefersReducedMotion — DESIGN §7. Under prefers-reduced-motion the panel
+ * slide and the pill glide become instant. Subscribes to the media query so a
+ * live OS toggle is picked up without a reload.
+ */
+function usePrefersReducedMotion(): boolean {
+  return useSyncExternalStore(
+    (cb) => {
+      if (typeof window === "undefined" || !window.matchMedia) return () => {};
+      const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+      const onChange = () => cb();
+      mq.addEventListener("change", onChange);
+      return () => mq.removeEventListener("change", onChange);
+    },
+    () =>
+      typeof window !== "undefined" &&
+      !!window.matchMedia &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches,
     () => false,
   );
 }

@@ -1,9 +1,9 @@
-import { Grip, Map, LucideIcon } from "lucide-react";
+import { LayoutGrid, Map, LucideIcon } from "lucide-react";
 
 /**
  * BottomToggle — DESIGN §4.6. White pill h=56, --shadow-float, fixed
  * bottom-center. Two icon segments; active = 44px black circle with a
- * white icon, inactive = --ink icon on white. Icons: map / grip.
+ * white icon, inactive = --ink icon on white. Icons: map / layout-grid.
  */
 export type BottomToggleActive = "map" | "list";
 
@@ -15,7 +15,7 @@ export interface BottomToggleProps {
 
 const SEGMENTS: { key: BottomToggleActive; icon: LucideIcon; label: string }[] = [
   { key: "map", icon: Map, label: "Карта" },
-  { key: "list", icon: Grip, label: "Список" },
+  { key: "list", icon: LayoutGrid, label: "Список" },
 ];
 
 export function BottomToggle({ active, onChange, className = "" }: BottomToggleProps) {
@@ -35,7 +35,7 @@ export function BottomToggle({ active, onChange, className = "" }: BottomToggleP
                 onClick={() => onChange?.(s.key)}
                 aria-label={s.label}
                 aria-pressed
-                className="inline-flex items-center justify-center rounded-full text-white transition-transform duration-150 active:scale-[.98]"
+                className="tappable inline-flex items-center justify-center rounded-full text-white"
                 style={{ width: 44, height: 44, background: "var(--ink)", border: "none", padding: 0 }}
               >
                 <s.icon size={20} strokeWidth={2} />
@@ -48,7 +48,7 @@ export function BottomToggle({ active, onChange, className = "" }: BottomToggleP
               type="button"
               onClick={() => onChange?.(s.key)}
               aria-label={s.label}
-              className="inline-flex items-center justify-center rounded-full text-ink transition-transform duration-150 active:scale-[.98]"
+              className="tappable inline-flex items-center justify-center rounded-full text-ink"
               style={{ width: 44, height: 44, background: "transparent", border: "none", padding: 0 }}
             >
               <s.icon size={20} strokeWidth={2} />

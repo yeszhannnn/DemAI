@@ -190,8 +190,8 @@ export function computeRisk(profile: Profile, inputs: Inputs): RiskResult {
 export function verdict(risk: number): Verdict {
   if (risk <= 3) {
     return {
-      textRu: "Хороший день — гуляй спокойно",
-      textKk: "Күні жақсы — тыныш серуендеңіз",
+      textRu: "Сегодня дышится легко",
+      textKk: "Бүгін ауа тап-таза — еркін серуендеуге болады",
       chipRu: "Низкий риск",
       chipKk: "Төмен тәуекел",
       chipToken: "risk-low",
@@ -200,8 +200,8 @@ export function verdict(risk: number): Verdict {
   }
   if (risk <= 6) {
     return {
-      textRu: "Умеренно — прислушивайся к себе",
-      textKk: "Орташа — өзіңізді тыңдаңыз",
+      textRu: "Фон умеренный — слушай себя",
+      textKk: "Ауа сапасы орташа — өзіңізді байқап жүріңіз",
       chipRu: "Средний риск",
       chipKk: "Орта тәуекел",
       chipToken: "risk-mid",
@@ -210,8 +210,8 @@ export function verdict(risk: number): Verdict {
   }
   if (risk <= 8) {
     return {
-      textRu: "Высокий риск — смотри действия ниже",
-      textKk: "Жоғары тәуекел — төмендегі әрекеттерді қараңыз",
+      textRu: "День непростой — лучше поберечься",
+      textKk: "Ауа сапасы нашар — сақтанғаныңыз жөн",
       chipRu: "Высокий риск",
       chipKk: "Жоғары тәуекел",
       chipToken: "risk-high",
@@ -219,8 +219,8 @@ export function verdict(risk: number): Verdict {
     };
   }
   return {
-    textRu: "Очень высокий — лучше день дома",
-    textKk: "Өте жоғары — үйде отырған дұрыс",
+    textRu: "Воздух тяжёлый — сегодня лучше остаться дома",
+    textKk: "Ауа сапасы өте нашар — бүгін далаға шықпағаның дұрыс",
     chipRu: "Очень высокий",
     chipKk: "Өте жоғары",
     chipToken: "risk-severe",

@@ -23,6 +23,7 @@ import {
   NEUTRAL_PROFILE,
   type RiskResponse,
 } from "@/lib/compose";
+import { demoHourly } from "@/lib/demo-forecast";
 import type { Profile } from "@/lib/risk";
 
 export const dynamic = "force-dynamic";
@@ -88,7 +89,10 @@ export async function GET(request: Request): Promise<Response> {
     const snapshot = await readSnapshot();
     const entry = snapshot?.districts?.[slug] ?? snapshot?.districts?.["bostandyk"];
     if (entry) {
-      return NextResponse.json(entry, {
+      // DEMO-only: replace the snapshot's flat hourly risks with a smooth,
+      // deterministic daily curve (lib/demo-forecast). Real path is untouched.
+      const demoEntry = { ...entry, hourly: demoHourly(entry.hourly) };
+      return NextResponse.json(demoEntry, {
         headers: { "cache-control": "public, max-age=60" },
       });
     }

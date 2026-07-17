@@ -3,7 +3,7 @@ import { ArrowUpRight, LucideIcon } from "lucide-react";
 /**
  * MetricCard — DESIGN §4.4. White card --r-card ~140x120, padding 16.
  * Top: caption name in SOLID --ink, weight 600 (reference labels are
- * near-solid, not muted) + a 32px #EDEFF1 circle with arrow-up-right.
+ * near-solid, not muted) + a 32px --icon-bg circle with arrow-up-right.
  * Bottom: num-metric value + unit ("µg/m³" or "/5"). Content is exactly
  * label, arrow circle, number, unit — no particle decor in any mode.
  *  - mode "word": a level word renders under the value (pollen cards).
@@ -37,7 +37,7 @@ export function MetricCard(props: Props) {
   const { name, value, mode, icon: Icon, onOpen, className = "" } = props;
   return (
     <div
-      className={`relative flex flex-col justify-between overflow-hidden bg-white shadow-card ${className}`}
+      className={`relative flex flex-col justify-between overflow-hidden bg-white shadow-soft ${className}`}
       style={{
         borderRadius: "var(--r-card)",
         padding: 16,
@@ -55,7 +55,7 @@ export function MetricCard(props: Props) {
           onClick={onOpen}
           aria-label={`Открыть ${name}`}
           className="inline-flex shrink-0 items-center justify-center rounded-full transition-transform duration-150 active:scale-[.98]"
-          style={{ width: 32, height: 32, background: "#EDEFF1", color: "var(--ink)", border: "none", padding: 0, cursor: onOpen ? "pointer" : "default" }}
+          style={{ width: 32, height: 32, background: "var(--icon-bg)", color: "var(--ink)", border: "none", padding: 0, cursor: onOpen ? "pointer" : "default" }}
         >
           {Icon ? <Icon size={16} strokeWidth={2} /> : <ArrowUpRight size={16} strokeWidth={2} />}
         </button>

@@ -29,6 +29,7 @@ export type DictKey = keyof Dict;
 const DICTS: Record<Locale, Dict> = { ru, kk };
 
 const STORAGE_KEY = "demai:locale";
+const PICKED_KEY = "demai:locale-picked";
 const EVENT = "demai:locale-change";
 
 const isBrowser = typeof window !== "undefined";
@@ -71,6 +72,31 @@ export function setLocale(l: Locale): void {
     }
   }
   emit();
+}
+
+/**
+ * Mark the locale as explicitly picked on the landing (§5.5). When set,
+ * onboarding skips S0 and starts at S1 — the user already chose a language.
+ * Persisted under `demai:locale-picked` so a refresh of /onboarding keeps
+ * the skip. Idempotent and SSR-safe.
+ */
+export function markLocalePicked(): void {
+  if (!isBrowser) return;
+  try {
+    window.localStorage.setItem(PICKED_KEY, "1");
+  } catch {
+    /* ignore */
+  }
+}
+
+/** True if the user picked a locale on the landing (→ onboarding skips S0). */
+export function localeWasPicked(): boolean {
+  if (!isBrowser) return false;
+  try {
+    return window.localStorage.getItem(PICKED_KEY) === "1";
+  } catch {
+    return false;
+  }
 }
 
 function subscribe(cb: () => void): () => void {
