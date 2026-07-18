@@ -15,18 +15,46 @@ export interface ButtonProps {
   onClick?: () => void;
   className?: string;
   disabled?: boolean;
+  /** Optional trailing affordance icon (e.g. ArrowRight on the landing CTA). */
+  icon?: LucideIcon;
+  /** When true, paint --shadow-float so the pill visibly lifts off the page. */
+  floating?: boolean;
+  /** Override the text-h2 weight (default 600). Landing CTA uses 700. */
+  fontWeight?: number;
+  /** Extra inline style (merged after defaults so callers can override). */
+  style?: React.CSSProperties;
 }
 
-export function PrimaryButton({ children, onClick, className = "", disabled }: ButtonProps) {
+export function PrimaryButton({
+  children,
+  onClick,
+  className = "",
+  disabled,
+  icon: Icon,
+  floating = false,
+  fontWeight,
+  style,
+}: ButtonProps) {
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
       className={`tappable tappable--primary w-full rounded-full text-h2 text-ink disabled:opacity-50 ${className}`}
-      style={{ height: 56, background: "var(--lime)", border: "none", padding: "0 20px" }}
+      style={{
+        height: 56,
+        background: "var(--lime)",
+        border: "none",
+        padding: "0 20px",
+        fontWeight,
+        boxShadow: floating ? "var(--shadow-float)" : undefined,
+        ...style,
+      }}
     >
-      {children}
+      <span className="inline-flex items-center justify-center gap-2">
+        {children}
+        {Icon ? <Icon size={20} strokeWidth={2.5} /> : null}
+      </span>
     </button>
   );
 }

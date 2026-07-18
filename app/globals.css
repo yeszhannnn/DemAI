@@ -151,6 +151,23 @@ html {
   animation: landing-enter 240ms ease-out both;
 }
 
+/* Landing CTA idle attention cue — DESIGN §5.5 hierarchy. The «Начать» button
+   is the single loudest lime element on the page; to help the eye land on it
+   we let its float shadow softly intensify and relax on a 2.5s loop. Only the
+   shadow's opacity/blur breathes — NO scale, NO lime pulse ring (that effect
+   stays banned). Paused on hover-capable pointers so the .tappable hover
+   shadow can take over, and neutralised under prefers-reduced-motion. */
+@keyframes landing-cta-breathe {
+  0%, 100% { box-shadow: 0 10px 24px rgba(33, 33, 33, 0.18); }
+  50%      { box-shadow: 0 16px 36px rgba(33, 33, 33, 0.30); }
+}
+.landing-cta {
+  animation: landing-cta-breathe 2500ms ease-in-out infinite;
+}
+@media (hover: hover) {
+  .landing-cta:hover { animation: none; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   @keyframes onb-enter-fwd { from { opacity: 1; } to { opacity: 1; } }
   @keyframes onb-exit-fwd  { from { opacity: 0; } to { opacity: 0; } }
@@ -160,6 +177,8 @@ html {
   [data-onb-pill] { transition: none !important; }
   /* Landing entrance: instant (DESIGN §7). */
   .landing-enter { animation: none !important; }
+  /* Landing CTA idle breathe: off — shadow stays at its static float value. */
+  .landing-cta { animation: none !important; }
 }
 
 /* ─────────────────────────────────────────────────────────────────────

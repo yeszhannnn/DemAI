@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Flower2, Gauge, HeartPulse, type LucideIcon } from "lucide-react";
+import { ArrowRight, Flower2, Gauge, HeartPulse, type LucideIcon } from "lucide-react";
 import { PrimaryButton } from "@/components/ui/Onboarding";
 import { LocalePill } from "@/components/ui/LocalePill";
 import { TopoTexture } from "@/components/ui/TopoTexture";
@@ -73,8 +73,21 @@ export function LandingClient() {
 
           <DemoBlob className="landing-enter" style={enter(2)} />
 
-          <section className="landing-enter" style={enter(3)}>
-            <PrimaryButton onClick={start}>{t("landing.start")}</PrimaryButton>
+          <section
+            className="landing-enter"
+            // gap-5 (20px) already separates siblings; +8px → 28px total so the
+            // lime CTA never reads as one stack with the lime blob above it.
+            style={{ marginTop: 8, ...enter(3) }}
+          >
+            <PrimaryButton
+              onClick={start}
+              icon={ArrowRight}
+              floating
+              fontWeight={700}
+              className="landing-cta"
+            >
+              {t("landing.start")}
+            </PrimaryButton>
             <p
               className="mt-2 text-center text-caption"
               style={{ color: "var(--white-70)" }}
@@ -145,6 +158,12 @@ function TopBar() {
  * «/10» on the left and a 2-line ink-40 verdict on the right. Non-interactive:
  * a div with aria-hidden, no hover/press. Mirrors AccentBlock's anatomy (§4.3)
  * exactly, minus the button semantics.
+ *
+ * Visual hierarchy (landing): the blob is a SOFT decorative preview, never the
+ * loudest lime element — the CTA «Начать» is. So the fill is --lime at 55%
+ * opacity over the --bg-home gradient (the page shows through, mixing toward a
+ * muted lime/slate), the shape is shrunk ~15% vs the AccentBlock, and there is
+ * no shadow. Topo lines stay. Reads as quiet decoration, clearly non-interactive.
  */
 function DemoBlob({
   className = "",
@@ -159,10 +178,10 @@ function DemoBlob({
       aria-hidden
       className={`relative w-full overflow-hidden ${className}`}
       style={{
-        background: "var(--lime)",
+        background: "rgba(234, 252, 95, 0.72)",
         borderRadius: "var(--r-inner)",
-        padding: "16px 20px",
-        minHeight: 96,
+        padding: "14px 18px",
+        minHeight: 82,
         ...style,
       }}
     >

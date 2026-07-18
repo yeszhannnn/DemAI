@@ -844,14 +844,6 @@ export function BotBanner({
     }
     const bot = process.env.NEXT_PUBLIC_TG_BOT ?? "";
     setResolvedBot(bot);
-    const url = `https://t.me/${bot}?start=${encodeURIComponent(anonId)}`;
-    // Log the EXACT deep-link URL before anything else, so we can see whether
-    // NEXT_PUBLIC_TG_BOT resolved to a real username or literally "undefined".
-    console.log("[DemAI] onConnect: deep-link URL about to open", url, {
-      bot,
-      anonId,
-      lang,
-    });
     if (!bot) {
       console.error(
         "[DemAI] onConnect: NEXT_PUBLIC_TG_BOT is falsy/undefined — refusing to open Telegram",
@@ -859,6 +851,27 @@ export function BotBanner({
       setBotError(tt("detail.botUnavailable"));
       return;
     }
+    // Reserve the popup slot SYNCHRONOUSLY within the trusted click gesture,
+    // BEFORE any await. window.open('', '_blank') is the call that needs the
+    // user gesture; navigating the already-open handle later does not. If
+    // this returns null the browser already blocked us — bail before the
+    // fetch and tell the user to allow popups.
+    const win = window.open("", "_blank");
+    if (win === null) {
+      console.error(
+        "[DemAI] onConnect: window.open('') returned null — popup blocked before fetch",
+      );
+      setBotError(tt("detail.botPopupBlocked"));
+      return;
+    }
+    const url = `https://t.me/${bot}?start=${encodeURIComponent(anonId)}`;
+    // Log the EXACT deep-link URL before navigating, so we can see whether
+    // NEXT_PUBLIC_TG_BOT resolved to a real username or literally "undefined".
+    console.log("[DemAI] onConnect: deep-link URL reserved for navigation", url, {
+      bot,
+      anonId,
+      lang,
+    });
     setConnecting(true);
     try {
       const r = await fetch("/api/link", {
@@ -872,24 +885,30 @@ export function BotBanner({
       if (!r.ok) {
         console.error("[DemAI] POST /api/link not ok", r.status, bodyText);
         setBotError(tt("detail.botLinkFailed", { status: r.status }));
+        // Close the blank tab we reserved — don't leave it stuck blank.
+        try {
+          win.close();
+        } catch {
+          /* ignore — cross-tab close can throw in some browsers */
+        }
         return;
       }
+      // Success: navigate the already-open tab to the Telegram deep link.
+      // This works even though time has passed, because the window handle
+      // itself is what needed the gesture, not the navigation.
+      win.location.href = url;
     } catch (err) {
       console.error("[DemAI] POST /api/link threw", err);
       setLastApiStatus("network");
       setBotError(tt("detail.botLinkFailed", { status: "network" }));
+      try {
+        win.close();
+      } catch {
+        /* ignore */
+      }
       return;
     } finally {
       setConnecting(false);
-    }
-    // Only open Telegram AFTER /api/link succeeded — otherwise /start has no
-    // profile to compose from. window.open so a failed navigation doesn't
-    // read as "nothing happened"; if the popup is blocked, say so loudly.
-    if (typeof window === "undefined") return;
-    const win = window.open(url, "_blank", "noopener");
-    if (win === null) {
-      console.error("[DemAI] window.open returned null — popup blocked", url);
-      setBotError(tt("detail.botPopupBlocked"));
     }
   }
 
