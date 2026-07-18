@@ -790,6 +790,23 @@ export function BotBanner({
   const [infoOpen, setInfoOpen] = useState(false);
   const infoWrapRef = useRef<HTMLDivElement | null>(null);
 
+  // Loud-connect diagnostics (Prompt: make Подключить failures visible).
+  // botError: red inline banner text (null = no banner). lastApiStatus feeds
+  // the dev/?debug=1 line so we can eyeball the resolved bot username + API
+  // result on prod without devtools.
+  const [botError, setBotError] = useState<string | null>(null);
+  const [lastApiStatus, setLastApiStatus] = useState<number | "network" | null>(null);
+  const [resolvedBot, setResolvedBot] = useState<string>("");
+  const showDebug = useMemo(() => {
+    if (process.env.NODE_ENV !== "production") return true;
+    if (typeof window === "undefined") return false;
+    try {
+      return new URLSearchParams(window.location.search).get("debug") === "1";
+    } catch {
+      return false;
+    }
+  }, []);
+
   // Close the info popover on an outside tap / Escape. The popover lives above
   // the capsule; tapping anywhere else dismisses it.
   useEffect(() => {
@@ -815,23 +832,65 @@ export function BotBanner({
 
   async function onConnect(): Promise<void> {
     if (connecting) return;
-    if (!anonId || !profile) return;
+    // Reset any previous error/popup state on each tap.
+    setBotError(null);
+    if (!anonId || !profile) {
+      console.error("[DemAI] onConnect: missing anonId or profile — cannot connect", {
+        anonId,
+        profile,
+      });
+      setBotError(tt("detail.botUnavailable"));
+      return;
+    }
     const bot = process.env.NEXT_PUBLIC_TG_BOT ?? "";
-    if (!bot) return;
+    setResolvedBot(bot);
+    const url = `https://t.me/${bot}?start=${encodeURIComponent(anonId)}`;
+    // Log the EXACT deep-link URL before anything else, so we can see whether
+    // NEXT_PUBLIC_TG_BOT resolved to a real username or literally "undefined".
+    console.log("[DemAI] onConnect: deep-link URL about to open", url, {
+      bot,
+      anonId,
+      lang,
+    });
+    if (!bot) {
+      console.error(
+        "[DemAI] onConnect: NEXT_PUBLIC_TG_BOT is falsy/undefined — refusing to open Telegram",
+      );
+      setBotError(tt("detail.botUnavailable"));
+      return;
+    }
     setConnecting(true);
     try {
-      await fetch("/api/link", {
+      const r = await fetch("/api/link", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ anonId, profile, lang }),
       });
-    } catch {
-      /* even if the upsert fails, still open the bot — /start will retry */
+      const bodyText = await r.text();
+      console.log("[DemAI] POST /api/link status", r.status, "body", bodyText);
+      setLastApiStatus(r.status);
+      if (!r.ok) {
+        console.error("[DemAI] POST /api/link not ok", r.status, bodyText);
+        setBotError(tt("detail.botLinkFailed", { status: r.status }));
+        return;
+      }
+    } catch (err) {
+      console.error("[DemAI] POST /api/link threw", err);
+      setLastApiStatus("network");
+      setBotError(tt("detail.botLinkFailed", { status: "network" }));
+      return;
     } finally {
       setConnecting(false);
     }
-    const url = `https://t.me/${bot}?start=${encodeURIComponent(anonId)}`;
-    if (typeof window !== "undefined") window.open(url, "_blank", "noopener");
+    // Only open Telegram AFTER /api/link succeeded — otherwise /start has no
+    // profile to compose from. window.open so a failed navigation doesn't
+    // read as "nothing happened"; if the popup is blocked, say so loudly.
+    if (typeof window === "undefined") return;
+    const win = window.open(url, "_blank", "noopener");
+    if (win === null) {
+      console.error("[DemAI] window.open returned null — popup blocked", url);
+      setBotError(tt("detail.botPopupBlocked"));
+    }
   }
 
   /** In-app diary fallback (PROMPTS §11.5): the capsule opens a bottom sheet
@@ -935,7 +994,38 @@ export function BotBanner({
             {tt("detail.botConnect")}
           </button>
         </div>
+
+        {/* Dev-only / ?debug=1 live diagnostics: resolved bot username +
+            last /api/link status, so we can eyeball it on prod without
+            opening devtools. Hidden in production unless ?debug=1. */}
+        {showDebug ? (
+          <p
+            data-testid="bot-debug-line"
+            className="relative mt-3 text-caption"
+            style={{ color: "var(--ink)" }}
+          >
+            {tt("detail.botDebug", {
+              bot: resolvedBot || "—",
+              status: lastApiStatus === null ? "—" : String(lastApiStatus),
+            })}
+          </p>
+        ) : null}
       </div>
+
+      {/* Inline error banner — shown only when onConnect hit a hard failure
+          (missing bot username, /api/link not ok / threw, or popup blocked).
+          Red background, white text, role="alert" so it's announced. */}
+      {botError ? (
+        <div
+          data-testid="bot-error-banner"
+          role="alert"
+          className="flex items-start gap-2 rounded-[var(--r-inner)] px-3 py-2 text-caption"
+          style={{ background: "#d92d20", color: "#fff" }}
+        >
+          <AlertTriangle size={14} strokeWidth={2} className="mt-[1px] shrink-0" />
+          <span>{botError}</span>
+        </div>
+      ) : null}
 
       {/* Push preview "message" card */}
       <div

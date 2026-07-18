@@ -48,6 +48,10 @@ export const kk = {
     "Ақпараттық қызмет, медициналық ұсыныс емес. Әрекеттерді дәрігермен келісіңіз", // REVIEW: native speaker
   "detail.botText": "Таңертеңгі болжам — Telegram-да 7:30-да", // REVIEW: native speaker
   "detail.botConnect": "Қосу", // REVIEW: native speaker
+  "detail.botUnavailable": "Бот уақытша қолжетімсіз — кейінірек байқаныңыз", // REVIEW: native speaker
+  "detail.botLinkFailed": "Ботпен байланыс сәтсіз ({status})", // REVIEW: native speaker
+  "detail.botPopupBlocked": "Қалқымалы терезелерге рұқсат беріп, қайталап көріңіз", // REVIEW: native speaker
+  "detail.botDebug": "bot: {bot} · api: {status}", // REVIEW: native speaker
   "detail.botLater": "Кейін", // REVIEW: native speaker
   "detail.botLaterReminder": "Кейін еске салу", // REVIEW: native speaker
   "detail.sparse": "Ауданыңызда датчик аз — қаланы көрсетеміз", // REVIEW: native speaker
