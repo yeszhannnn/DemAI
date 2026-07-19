@@ -116,6 +116,100 @@ export function OptionCard({ children, selected, icon: Icon, onClick, className 
   );
 }
 
+export interface ConditionCardProps {
+  children: ReactNode;
+  selected?: boolean;
+  icon?: LucideIcon;
+  onClick?: () => void;
+  className?: string;
+}
+
+/**
+ * ConditionCard — the 2-column grid card for the diagnosis list (DESIGN §4.7,
+ * §7). Used by onboarding S2 and /settings, BOTH reading from
+ * lib/conditions.ts (the single source of truth).
+ *
+ * The parent grid is `grid-template-columns: 1fr 1fr; align-items: stretch`
+ * (Tailwind `grid grid-cols-2 gap-3`), so the two cards in a row share the
+ * SAME height — the taller label's wrap sets the row height for both. Card
+ * content is a top-aligned column (icon circle top, label below) so 1-line
+ * and 3-line labels start at the same baseline; the leftover space sits at
+ * the bottom of the taller card.
+ *
+ *  - min-height 88, padding 16, label body/15px at line-height 1.3, max 3
+ *    lines (`line-clamp-3`) so nothing pushes the grid further than needed.
+ *  - Checkmark: absolute top:12 right:12, 22px circle, --ink bg, white check —
+ *    fully INSIDE the card. It is inset 12px from the card edge so it never
+ *    overlaps or clips the 2px selected border (the border lives on the card
+ *    itself; no negative positioning, no parent overflow:hidden clipping).
+ *  - Selected: 2px --ink border + --lime-16 wash (DESIGN §7). The checkmark
+ *    sits above the content (z-index implied by DOM order) but inside the
+ *    border, so the border is never covered.
+ *  - Icon: 40px circle, --icon-bg, icon --ink at stroke-width 1.75 — reads
+ *    crisp dark against the light circle at 20px.
+ */
+export function ConditionCard({
+  children,
+  selected,
+  icon: Icon,
+  onClick,
+  className = "",
+}: ConditionCardProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={selected}
+      className={`tappable relative flex w-full flex-col items-start justify-start gap-2 text-left ${className}`}
+      style={{
+        minHeight: 88,
+        borderRadius: "var(--r-inner)",
+        padding: 16,
+        border: selected ? "2px solid var(--ink)" : "2px solid transparent",
+        background: selected ? "var(--lime-16)" : "var(--white)",
+        boxShadow: selected ? "none" : "var(--shadow-card)",
+        cursor: "pointer",
+      }}
+    >
+      {Icon ? (
+        <span
+          className="inline-flex shrink-0 items-center justify-center rounded-full"
+          style={{
+            width: 40,
+            height: 40,
+            background: "var(--icon-bg)",
+            color: "var(--ink)",
+          }}
+        >
+          <Icon size={20} strokeWidth={1.75} />
+        </span>
+      ) : null}
+      <span
+        className="line-clamp-3 text-left text-body text-ink"
+        style={{ lineHeight: 1.3 }}
+      >
+        {children}
+      </span>
+      {selected ? (
+        <span
+          aria-hidden
+          className="absolute inline-flex items-center justify-center rounded-full"
+          style={{
+            top: 12,
+            right: 12,
+            width: 22,
+            height: 22,
+            background: "var(--ink)",
+            color: "var(--white)",
+          }}
+        >
+          <Check size={14} strokeWidth={2.5} />
+        </span>
+      ) : null}
+    </button>
+  );
+}
+
 export interface ProgressDotsProps {
   /** Total steps (reference onboarding = 5). */
   total: number;

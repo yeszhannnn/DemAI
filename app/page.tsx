@@ -25,16 +25,24 @@ import { LandingClient } from "./landing/LandingClient";
  */
 export default function Home() {
   const router = useRouter();
-  const { profile, isComplete } = useProfile();
+  const { profile, isComplete, hydrated } = useProfile();
   const demo = isDemo();
 
   useEffect(() => {
+    // Never route on a pre-hydration tick: on a hard refresh the server
+    // snapshot is `null` so `isComplete` is transiently `false` and a naive
+    // guard would bounce a complete profile to onboarding (PROMPTS §7).
+    if (!hydrated) return;
     if (isComplete && profile?.district) {
       router.replace(`/d/${profile.district}${demo ? "?demo=1" : ""}`);
     }
-  }, [isComplete, profile, demo, router]);
+  }, [hydrated, isComplete, profile, demo, router]);
 
-  // A complete profile redirects to Detail above. Otherwise show the Landing.
-  if (isComplete && profile?.district) return null;
+  // Hold the screen blank until hydration settles so no redirect fires on a
+  // stale snapshot. A complete profile redirects above; an incomplete one
+  // renders the Landing. Demo mode skips the splash so /?demo=1 paints at
+  // once (the demo must not depend on hydration timing — §7).
+  if (hydrated && isComplete && profile?.district) return null;
+  if (!hydrated && !demo) return null;
   return <LandingClient />;
 }

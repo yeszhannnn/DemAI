@@ -12,11 +12,12 @@
  * and unit-testable).
  */
 
-import type { Diagnosis, Trigger } from "./risk";
+import type { Trigger } from "./risk";
 
 export interface ActionContext {
   risk: number;
-  diagnosis: Diagnosis;
+  /** Selected condition ids from lib/conditions.ts (multi-select). */
+  diagnosis: string[];
   triggers: Trigger[];
   pollen: { wormwood: number; ragweed: number; birch: number };
   weather: { windMs: number; humidity: number; precipMm: number; tempC: number };
@@ -68,7 +69,7 @@ const RULES: Rule[] = [
     textKk: "Ингалятор жаныңызда екенін тексеріңіз",
     icon: "backpack",
     priority: 92,
-    match: (c) => c.diagnosis === "asthma" || c.diagnosis === "both",
+    match: (c) => c.diagnosis.includes("asthma"),
   },
   {
     id: "stay-home",

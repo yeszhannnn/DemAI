@@ -22,7 +22,7 @@
  * ONE definition (Prompt 3 type).
  */
 
-import { useEffect, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import type { Profile } from "./risk";
 
 const ANON_KEY = "demai:anonid";
@@ -396,7 +396,7 @@ export function isProfileComplete(p: Profile | null): boolean {
   if (p.who !== "self" && p.who !== "parent") return false;
   if (p.who === "parent" && (p.childAge === undefined || p.childAge <= 0))
     return false;
-  if (!p.diagnosis) return false;
+  if (!Array.isArray(p.diagnosis) || p.diagnosis.length === 0) return false;
   if (!Array.isArray(p.triggers)) return false;
   if (!p.district) return false;
   return true;
@@ -409,9 +409,17 @@ export interface UseProfile {
   diaryCount: number;
   todayMarked: boolean;
   isComplete: boolean;
+  /** `false` through the first render (matching SSR), `true` once the client
+   *  has run a `useEffect` after the localStorage read. Guards MUST NOT make
+   *  routing decisions while `hydrated === false`: on a hard refresh the
+   *  server snapshot is `null` and `isComplete` is transiently `false`, so a
+   *  naive guard would bounce a complete profile to onboarding. Waiting one
+   *  tick for `hydrated` guarantees the snapshot is real before any redirect. */
+  hydrated: boolean;
   saveProfile: (p: Profile) => void;
   updateProfile: (patch: Partial<Profile>) => void;
   clearProfile: () => void;
+  clearAnonId: () => void;
   setPlaces: (places: Place[]) => void;
   addPlace: (place: Place) => void;
   removePlace: (id: string) => void;
@@ -446,6 +454,26 @@ export function useProfile(): UseProfile {
     getServerTodayMarked,
   );
 
+  // Explicit hydration signal. `useSyncExternalStore` returns the server
+  // snapshot (`null` profile) during SSR and the first client render, then
+  // swaps to the real client snapshot. That swap is enough for *rendering*
+  // but is not a reliable gate for *routing*: a guard `useEffect` can fire in
+  // the same commit that still observes the stale snapshot on some paths
+  // (notably a hard refresh of /d/<district> followed by an immediate tap of
+  // the grid button → /home). `hydrated` flips to `true` only in a subsequent
+  // commit, after a `useEffect` has run, so any guard that waits on it can
+  // never observe a pre-hydration tick. This is the single source of truth
+  // for "the localStorage read has settled" (PROMPTS §7 returning-user rule).
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => {
+    // Intentional cascading render: this is the canonical "has mounted" gate.
+    // The extra render is the whole point — it flips `hydrated` to true only
+    // in a commit AFTER the first, so no guard can observe a pre-hydration
+    // tick. See the hook docstring for the race this closes.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setHydrated(true);
+  }, []);
+
   // Self-learning loop (PROMPTS §11.3): on app open, fetch /api/me once and
   // mirror `personalPm25` into the local profile. The sync guard dedupes
   // across hook instances and only re-runs if the anon id changes.
@@ -468,7 +496,7 @@ export function useProfile(): UseProfile {
   function updateProfile(patch: Partial<Profile>): void {
     const next: Profile = {
       who: "self",
-      diagnosis: "unknown",
+      diagnosis: [],
       triggers: [],
       district: "",
       sensitive: false,
@@ -487,6 +515,21 @@ export function useProfile(): UseProfile {
         /* ignore */
       }
     }
+    notify();
+  }
+
+  function clearAnonId(): void {
+    cachedAnonId = "";
+    if (isBrowser) {
+      try {
+        window.localStorage.removeItem(ANON_KEY);
+      } catch {
+        /* ignore */
+      }
+    }
+    // Reset the /api/me sync guard so the next anon id re-syncs from scratch.
+    meSyncAnonId = "";
+    meSyncPromise = null;
     notify();
   }
 
@@ -509,9 +552,11 @@ export function useProfile(): UseProfile {
     diaryCount,
     todayMarked,
     isComplete: isProfileComplete(profile),
+    hydrated,
     saveProfile,
     updateProfile,
     clearProfile,
+    clearAnonId,
     setPlaces: setPlacesHook,
     addPlace: addPlaceHook,
     removePlace: removePlaceHook,

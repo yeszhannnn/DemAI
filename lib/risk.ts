@@ -8,14 +8,19 @@
  *   fWx     ∈ 0..1  — weather aggravators (stagnation / humidity / washout)
  */
 
+import { maxMultiplier } from "./conditions";
+
 export type PollenTrigger = "wormwood" | "birch" | "ragweed";
 export type Trigger = "pm25" | "smoke" | PollenTrigger;
-export type Diagnosis = "asthma" | "pollinosis" | "both" | "unknown";
 
 export interface Profile {
   who: "self" | "parent";
   childAge?: number;
-  diagnosis: Diagnosis;
+  /** One or more condition ids from `lib/conditions.ts` (multi-select).
+   *  Empty array means "no diagnosis picked yet" — `isProfileComplete`
+   *  treats that as incomplete. The sensitivity multiplier is the MAX across
+   *  the selected conditions' `multiplier` fields. */
+  diagnosis: string[];
   triggers: Trigger[];
   district: string;
   sensitive: boolean;
@@ -122,18 +127,13 @@ export function fWx(w: Inputs["weather"]): number {
   return clamp(v, 0, 1);
 }
 
-/** Sensitivity multiplier (DESIGN §6 step 5). */
+/** Sensitivity multiplier (DESIGN §6 step 5). The MAX across all selected
+ *  conditions' `multiplier` fields (lib/conditions.ts) — so a user with both
+ *  asthma (1.15) and pollinosis (1.0) gets 1.15, not a stack. Defaults to 1.0
+ *  for an empty selection. The legacy `profile.sensitive` flag no longer
+ *  bumps the multiplier; it only marks the "cautious thresholds" path. */
 export function multiplier(profile: Profile): number {
-  switch (profile.diagnosis) {
-    case "asthma":
-      return 1.15;
-    case "both":
-      return 1.25;
-    case "unknown":
-      return 1.2;
-    default: // pollinosis
-      return profile.sensitive ? 1.2 : 1.0;
-  }
+  return maxMultiplier(profile.diagnosis);
 }
 
 export function computeRisk(profile: Profile, inputs: Inputs): RiskResult {
@@ -193,7 +193,7 @@ export function verdict(risk: number): Verdict {
       textRu: "Сегодня дышится легко",
       textKk: "Бүгін ауа тап-таза — еркін серуендеуге болады",
       chipRu: "Низкий риск",
-      chipKk: "Төмен тәуекел",
+      chipKk: "Төмен қауіп деңгейі",
       chipToken: "risk-low",
       icon: "thumbs-up",
     };
@@ -203,7 +203,7 @@ export function verdict(risk: number): Verdict {
       textRu: "Фон умеренный — слушай себя",
       textKk: "Ауа сапасы орташа — өзіңізді байқап жүріңіз",
       chipRu: "Средний риск",
-      chipKk: "Орта тәуекел",
+      chipKk: "Орта қауіп деңгейі",
       chipToken: "risk-mid",
       icon: "minus-circle",
     };
@@ -213,7 +213,7 @@ export function verdict(risk: number): Verdict {
       textRu: "День непростой — лучше поберечься",
       textKk: "Ауа сапасы нашар — сақтанғаныңыз жөн",
       chipRu: "Высокий риск",
-      chipKk: "Жоғары тәуекел",
+      chipKk: "Жоғары қауіп деңгейі",
       chipToken: "risk-high",
       icon: "alert-triangle",
     };

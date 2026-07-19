@@ -9,6 +9,7 @@
     "lint": "eslint",
     "lint:design": "node scripts/lint-design.mjs",
     "icons": "node scripts/gen-icons.mjs",
+    "favicon": "node scripts/gen-favicon.mjs",
     "test": "vitest run",
     "e2e": "playwright test",
     "pollen:print": "tsx scripts/pollen-print.ts",

@@ -1,11 +1,15 @@
-import { Home, LayoutGrid, LocateFixed, Search, Settings } from "lucide-react";
+import { ChevronLeft, Home, LayoutGrid, LocateFixed, Search, Settings } from "lucide-react";
 import { IconCircle } from "./IconCircle";
 
 /**
  * TopBar — DESIGN §4.1, three variants: map · home · detail.
  * Pure presentational; callbacks come in as props, no routing inside.
+ *
+ * A fourth `settings` variant backs the /settings page (§5.6): a white
+ * chevron-left circle on the left (→ /home), a centered white title, and a
+ * white «Готово» text button on the right.
  */
-export type TopBarVariant = "map" | "home" | "detail";
+export type TopBarVariant = "map" | "home" | "detail" | "settings";
 
 export interface TopBarProps {
   variant: TopBarVariant;
@@ -16,6 +20,10 @@ export interface TopBarProps {
   onSearch?: () => void;
   onLocate?: () => void;
   onSettings?: () => void;
+  onBack?: () => void;
+  onDone?: () => void;
+  doneLabel?: string;
+  backAria?: string;
   /** Extra classes for the detail variant's grid icon circle (§7 tap states). */
   iconClassName?: string;
 }
@@ -29,6 +37,10 @@ export function TopBar({
   onSearch,
   onLocate,
   onSettings,
+  onBack,
+  onDone,
+  doneLabel,
+  backAria,
   iconClassName = "",
 }: TopBarProps) {
   if (variant === "map") {
@@ -78,6 +90,18 @@ export function TopBar({
     );
   }
 
+  if (variant === "settings") {
+    return (
+      <SettingsTopBar
+        title={title}
+        onBack={onBack}
+        onDone={onDone}
+        doneLabel={doneLabel}
+        backAria={backAria}
+      />
+    );
+  }
+
   // detail — left grid button (→ Home) + centered location pill, nothing on the right.
   return (
     <div className="relative flex items-center gap-3">
@@ -103,6 +127,60 @@ export function TopBar({
           ) : null}
         </div>
       </div>
+    </div>
+  );
+}
+
+/**
+ * settings — DESIGN §5.6. White chevron-left circle on the left (→ /home),
+ * centered white title, white «Готово» text button on the right. The back
+ * circle and the done button both carry --shadow-card so they read as the
+ * same floating-control family as the detail TopBar.
+ */
+function SettingsTopBar({
+  title,
+  onBack,
+  onDone,
+  doneLabel,
+  backAria,
+}: {
+  title: string;
+  onBack?: () => void;
+  onDone?: () => void;
+  doneLabel?: string;
+  backAria?: string;
+}) {
+  return (
+    <div className="relative flex items-center justify-between gap-3">
+      <IconCircle
+        icon={ChevronLeft}
+        variant="white"
+        size={44}
+        aria-label={backAria}
+        onClick={onBack}
+        className="shadow-card"
+      />
+      <div className="text-body text-white truncate">{title}</div>
+      {onDone ? (
+        <button
+          type="button"
+          onClick={onDone}
+          className="tappable rounded-full px-4 text-chip text-white"
+          style={{
+            height: 44,
+            background: "var(--glass-light)",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+            border: "none",
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          {doneLabel}
+        </button>
+      ) : (
+        <span style={{ width: 44 }} />
+      )}
     </div>
   );
 }

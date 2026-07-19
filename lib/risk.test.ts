@@ -40,7 +40,7 @@ describe("fPm breakpoint table", () => {
 describe("fPollen / fWx / multiplier", () => {
   const profile: Profile = {
     who: "self",
-    diagnosis: "pollinosis",
+    diagnosis: ["pollinosis"],
     triggers: ["wormwood", "birch"],
     district: "Бостандық",
     sensitive: false,
@@ -68,28 +68,35 @@ describe("fPollen / fWx / multiplier", () => {
     );
     expect(fWx({ windMs: 5, humidity: 30, precipMm: 5, tempC: 5 })).toBe(0);
   });
-  it("applies the sensitivity multiplier per diagnosis", () => {
+  it("applies the MAX multiplier across selected conditions (multi-select)", () => {
     const base: Profile = {
       who: "self",
       triggers: [],
       district: "x",
-      diagnosis: "pollinosis",
+      diagnosis: [],
       sensitive: false,
     };
-    expect(multiplier({ ...base, diagnosis: "asthma", sensitive: false })).toBe(
-      1.15,
-    );
-    expect(multiplier({ ...base, diagnosis: "both", sensitive: false })).toBe(
-      1.25,
-    );
-    expect(multiplier({ ...base, diagnosis: "unknown", sensitive: false })).toBe(
-      1.2,
-    );
+    // Single conditions carry their own multiplier.
+    expect(multiplier({ ...base, diagnosis: ["asthma"] })).toBe(1.15);
+    expect(multiplier({ ...base, diagnosis: ["copd"] })).toBe(1.25);
+    expect(multiplier({ ...base, diagnosis: ["other_unknown"] })).toBe(1.2);
+    expect(multiplier({ ...base, diagnosis: ["pollinosis"] })).toBe(1.0);
+    expect(multiplier({ ...base, diagnosis: ["sensitive_group"] })).toBe(1.2);
+    // Empty selection → neutral 1.0.
+    expect(multiplier({ ...base, diagnosis: [] })).toBe(1.0);
+    // The MAX wins across multi-select: asthma (1.15) + copd (1.25) → 1.25.
     expect(
-      multiplier({ ...base, diagnosis: "pollinosis", sensitive: true }),
-    ).toBe(1.2);
+      multiplier({ ...base, diagnosis: ["asthma", "copd"] }),
+    ).toBe(1.25);
+    // asthma (1.15) + pollinosis (1.0) → 1.15 (the user has both, the higher
+    // sensitivity governs — never stacked).
     expect(
-      multiplier({ ...base, diagnosis: "pollinosis", sensitive: false }),
+      multiplier({ ...base, diagnosis: ["asthma", "pollinosis"] }),
+    ).toBe(1.15);
+    // The legacy `sensitive` flag no longer bumps the multiplier — it only
+    // marks the cautious-thresholds path. pollinosis stays 1.0 either way.
+    expect(
+      multiplier({ ...base, diagnosis: ["pollinosis"], sensitive: true }),
     ).toBe(1.0);
   });
 });
@@ -98,7 +105,7 @@ describe("computeRisk — TVEP integration", () => {
   it("1. clean day → low risk (1–3), thumbs-up chip", () => {
     const profile: Profile = {
       who: "self",
-      diagnosis: "pollinosis",
+      diagnosis: ["pollinosis"],
       triggers: ["wormwood"],
       district: "Бостандық",
       sensitive: false,
@@ -121,7 +128,7 @@ describe("computeRisk — TVEP integration", () => {
   it("2. smog + calm → high risk (7–8), alert-triangle", () => {
     const profile: Profile = {
       who: "self",
-      diagnosis: "asthma",
+      diagnosis: ["asthma"],
       triggers: ["pm25"],
       district: "Бостандық",
       sensitive: false,
@@ -142,7 +149,7 @@ describe("computeRisk — TVEP integration", () => {
   it("3. peak wormwood for a pollinosis profile → pollen is the top contributor", () => {
     const profile: Profile = {
       who: "self",
-      diagnosis: "pollinosis",
+      diagnosis: ["pollinosis"],
       triggers: ["wormwood", "birch"],
       district: "Бостандық",
       sensitive: false,
@@ -165,7 +172,7 @@ describe("computeRisk — TVEP integration", () => {
   it("4. rain washout lowers the risk vs the same dry day", () => {
     const profile: Profile = {
       who: "self",
-      diagnosis: "pollinosis",
+      diagnosis: ["pollinosis"],
       triggers: ["wormwood", "birch"],
       district: "Бостандық",
       sensitive: false,
@@ -192,7 +199,7 @@ describe("computeRisk — TVEP integration", () => {
   it("5. no pollen triggers → pollen weight (0.35) is redistributed to PM", () => {
     const noPollenProfile: Profile = {
       who: "self",
-      diagnosis: "pollinosis",
+      diagnosis: ["pollinosis"],
       triggers: ["pm25", "smoke"],
       district: "Бостандық",
       sensitive: false,
@@ -221,7 +228,7 @@ describe("computeRisk — TVEP integration", () => {
   it("6. personalPm25 shifts the result for the same ambient PM2.5", () => {
     const base: Profile = {
       who: "self",
-      diagnosis: "asthma",
+      diagnosis: ["asthma"],
       triggers: ["pm25"],
       district: "Бостандық",
       sensitive: false,

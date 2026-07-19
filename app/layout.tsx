@@ -24,14 +24,6 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: "DemAI",
   },
-  icons: {
-    icon: [
-      { url: "/icon.svg", type: "image/svg+xml" },
-      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
-    ],
-    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
-  },
   openGraph: {
     type: "website",
     locale: "ru_KZ",
@@ -40,10 +32,10 @@ export const metadata: Metadata = {
     description: DESCRIPTION,
     images: [
       {
-        url: "/icon-512.png",
+        url: "/logo.png",
         width: 512,
         height: 512,
-        alt: "DemAI — лаймовый квадрат с буквой D",
+        alt: "DemAI",
       },
     ],
   },
@@ -51,7 +43,7 @@ export const metadata: Metadata = {
     card: "summary",
     title: "DemAI — персональный прогноз риска",
     description: DESCRIPTION,
-    images: ["/icon-512.png"],
+    images: ["/logo.png"],
   },
   formatDetection: { telephone: false },
 };

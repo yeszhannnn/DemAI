@@ -93,7 +93,7 @@ export function formatMorning(
 
   return [
     `Алматы · ${place}`,
-    `${kk ? "Тәуекел" : "Риск"} ${res.risk}/10 — ${chip}`,
+    `${kk ? "Қауіп деңгейі" : "Риск"} ${res.risk}/10 — ${chip}`,
     verdict,
     "",
     actionLines,

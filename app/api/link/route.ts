@@ -29,7 +29,8 @@ function isProfile(v: unknown): v is Profile {
   const p = v as Record<string, unknown>;
   return (
     typeof p.who === "string" &&
-    typeof p.diagnosis === "string" &&
+    Array.isArray(p.diagnosis) &&
+    p.diagnosis.every((d) => typeof d === "string") &&
     Array.isArray(p.triggers) &&
     typeof p.district === "string"
   );

@@ -25,6 +25,14 @@ export const ru = {
   "home.addConfirm": "Добавить",
   "home.addCancel": "Отмена",
 
+  // Search overlay (Home search circle)
+  "search.placeholder": "Поиск по местам",
+  "search.aria.open": "Поиск",
+  "search.aria.clear": "Очистить",
+  "search.aria.close": "Закрыть",
+  "search.empty": "Ничего не найдено",
+  "search.hint": "Добавь место на главной",
+
   // Places
   "place.home": "Дом",
   "place.school": "Школа",
@@ -105,8 +113,8 @@ export const ru = {
   // S0 — language
   "onb.s0.title": "Выбери язык",
   "onb.s0.hint": "Можно сменить позже",
-  "onb.lang.kk": "Қазақша",
-  "onb.lang.ru": "Русский",
+  "onb.lang.kk": "KZ",
+  "onb.lang.ru": "RU",
 
   // S1 — who
   "onb.s1.title": "Для кого прогноз?",
@@ -114,13 +122,9 @@ export const ru = {
   "onb.who.self": "Для меня",
   "onb.who.parent": "Для моего ребёнка",
 
-  // S2 — diagnosis
+  // S2 — diagnosis (labels live in lib/conditions.ts — single source of truth)
   "onb.s2.title": "Диагноз",
   "onb.s2.hint": "Всё хранится только на этом телефоне",
-  "onb.diag.asthma": "Астма",
-  "onb.diag.pollinosis": "Поллиноз",
-  "onb.diag.both": "Оба",
-  "onb.diag.unknown": "Не знаю",
   "onb.childAge.label": "Возраст ребёнка",
   "onb.childAge.suffix": "лет",
   "onb.sensitive.copy":
@@ -158,6 +162,15 @@ export const ru = {
   "map.geo.locating": "Определяем…",
   "map.sheetUnit": "/10",
 
+  // Map search overlay (§5.3 / PROMPTS §9.3) — Nominatim address search
+  "map.search.placeholder": "Адрес в Алматы",
+  "map.search.aria.open": "Поиск адреса",
+  "map.search.aria.clear": "Очистить",
+  "map.search.aria.close": "Закрыть",
+  "map.search.empty": "Ничего не найдено",
+  "map.search.offline": "Поиск недоступен офлайн",
+  "map.search.outOfCoverage": "Адрес вне зоны покрытия",
+
   // Landing — pre-onboarding (§5.5)
   "landing.h1": "Твой личный прогноз воздуха и пыльцы",
   "landing.sub":
@@ -171,6 +184,28 @@ export const ru = {
   "landing.locale.ru": "RU",
   "landing.logoAria": "DemAI — на главную",
   "landing.localeAria": "Выбрать язык",
+
+  // Settings screen (§5.6)
+  "settings.title": "Настройки",
+  "settings.done": "Готово",
+  "settings.saved": "Сохранено",
+  "settings.language": "Язык",
+  "settings.who": "Кто вы",
+  "settings.who.self": "Я сам",
+  "settings.who.parent": "Родитель ребёнка",
+  "settings.diagnosis": "Диагноз",
+  "settings.triggers": "Триггеры",
+  "settings.district": "Район",
+  "settings.childAge": "Возраст ребёнка",
+  "settings.reset": "Сброс",
+  "settings.resetButton": "Сбросить профиль",
+  "settings.resetConfirmTitle": "Точно сбросить?",
+  "settings.resetConfirmBody": "Профиль и настройки удалятся",
+  "settings.resetConfirmCancel": "Отмена",
+  "settings.resetConfirmOk": "Сбросить",
+  "settings.lang.kk": "KZ",
+  "settings.lang.ru": "RU",
+  "settings.backAria": "Назад",
 };
 
 export type DictKey = keyof typeof ru;

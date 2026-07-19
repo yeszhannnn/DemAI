@@ -48,24 +48,25 @@ export function MapTopBar({ city, country, onSearch, onLocate }: MapTopBarProps)
           WebkitBackdropFilter: "blur(12px)",
         }}
       >
-        {/* LEFT — lime «D» logo circle, 44px, 6px inset from the left rim. */}
-        {/* LOGO PLACEHOLDER — solid --lime, «D» in ink (700/20). */}
+        {/* LEFT — logo, 44px, 6px inset from the left rim. */}
         <span
           aria-hidden
-          className="inline-flex shrink-0 items-center justify-center rounded-full"
+          className="inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full"
           style={{
             marginLeft: CIRCLE_INSET,
             width: 44,
             height: 44,
-            background: "var(--lime)",
-            color: "var(--ink)",
-            fontWeight: 700,
-            fontSize: 20,
-            lineHeight: 1,
             border: "none",
+            padding: 0,
           }}
         >
-          D
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logo.png"
+            alt=""
+            draggable={false}
+            style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+          />
         </span>
 
         {/* CENTER — city + country, two lines, centered between the circles. */}

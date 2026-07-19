@@ -49,6 +49,7 @@ import maplibregl, { type StyleSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { X } from "lucide-react";
 import { MapTopBar } from "@/components/ui/MapTopBar";
+import { MapSearchOverlay } from "@/components/ui/MapSearchOverlay";
 import { ModeSwitch, type ModeSwitchValue } from "@/components/ui/ModeSwitch";
 import { BottomToggle } from "@/components/ui/BottomToggle";
 import { AccentBlock } from "@/components/ui/AccentBlock";
@@ -56,7 +57,8 @@ import { PrimaryButton } from "@/components/ui/Onboarding";
 import { isDemo } from "@/lib/demo";
 import { useLocale, useT } from "@/lib/i18n";
 import { verdict as riskVerdict } from "@/lib/risk";
-import {
+import type { GeocodeResult } from "@/lib/geocode";
+import { districtAt } from "@/lib/point-in-polygon";import {
   buildCellPointsGeoJSON,
   pointsBounds,
   type CellPointCollection,
@@ -468,6 +470,9 @@ interface Selected {
   nameRu: string;
   nameKk: string;
   risk: number;
+  /** When the point fell outside all 8 districts, the sheet shows this caption
+   *  above the nearest district's risk (PROMPTS §9.3). */
+  outOfCoverage?: boolean;
 }
 
 export function MapClient({ districtsFC }: { districtsFC: DistrictFC }) {
@@ -484,6 +489,11 @@ export function MapClient({ districtsFC }: { districtsFC: DistrictFC }) {
   // the polygon feature, so a refresh doesn't require rebuilding the source).
   const riskBySlugRef = useRef<Record<string, number>>({});
   const [geoStatus, setGeoStatus] = useState<"idle" | "locating" | "denied">("idle");
+  // Address search overlay (PROMPTS §9.3). `searchOpen` drives MapSearchOverlay;
+  // the pin marker is a raw maplibregl.Marker (lucide map-pin in a lime circle)
+  // kept in a ref so it survives re-renders and is removed on next search/close.
+  const [searchOpen, setSearchOpen] = useState(false);
+  const pinMarkerRef = useRef<maplibregl.Marker | null>(null);
   // 2D/3D mode. 3D (default) tilts the camera and shows building extrusion; 2D
   // flattens to pitch 0 / bearing 0 and hides extrusion. Persisted in
   // localStorage. `mode3D` drives the toggle button render; `modeRef` is read
@@ -1098,6 +1108,8 @@ export function MapClient({ districtsFC }: { districtsFC: DistrictFC }) {
       disposed = true;
       resizeObserver?.disconnect();
       resizeObserver = null;
+      pinMarkerRef.current?.remove();
+      pinMarkerRef.current = null;
       map?.remove();
       map = null;
       mapRef.current = null;
@@ -1193,6 +1205,98 @@ export function MapClient({ districtsFC }: { districtsFC: DistrictFC }) {
     );
   }
 
+  // ---- Address search (PROMPTS §9.3) ---------------------------------------
+  // The pin is a raw maplibregl.Marker built from a DOM element (lucide
+  // map-pin in a lime circle, --shadow-float). It clears on the next search
+  // open and on overlay close-without-select; selecting a result drops a new
+  // pin (replacing any old one), flies the camera, and opens the district
+  // sheet (or the «Адрес вне зоны покрытия» sheet with the nearest district's
+  // risk when the point is outside all 8 districts).
+  function clearPin(): void {
+    const m = pinMarkerRef.current;
+    if (m) {
+      try {
+        m.remove();
+      } catch {
+        /* already gone */
+      }
+    }
+    pinMarkerRef.current = null;
+  }
+
+  function dropPin(lng: number, lat: number): void {
+    const map = mapRef.current;
+    if (!map) return;
+    clearPin();
+    const el = document.createElement("div");
+    el.style.cssText =
+      "width:40px;height:40px;border-radius:9999px;background:var(--lime);" +
+      "color:var(--ink);display:flex;align-items:center;justify-content:center;" +
+      "box-shadow:var(--shadow-float);border:none;pointer-events:none;";
+    el.innerHTML =
+      '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" ' +
+      'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+      '<path d="M20 10c0 4.9-8 13-8 13s-8-8.1-8-13a8 8 0 0 1 16 0Z"/>' +
+      '<circle cx="12" cy="10" r="3"/></svg>';
+    const marker = new maplibregl.Marker({ element: el, anchor: "bottom" })
+      .setLngLat([lng, lat])
+      .addTo(map);
+    pinMarkerRef.current = marker;
+  }
+
+  function openSearch(): void {
+    clearPin();
+    setSearchOpen(true);
+  }
+
+  function closeSearch(): void {
+    clearPin();
+    setSearchOpen(false);
+  }
+
+  function handleSearchSelect(r: GeocodeResult): void {
+    const map = mapRef.current;
+    const lng = r.lon;
+    const lat = r.lat;
+    // Drop the pin + fly the camera BEFORE closing the overlay so the fly
+    // starts under the backdrop (no visual pop). pitch follows the current
+    // mode (55 in 3D, 0 in 2D). A failure here is non-fatal — the sheet still
+    // opens. essential:true so the fly still runs under prefers-reduced-motion.
+    if (map) {
+      try {
+        dropPin(lng, lat);
+        map.flyTo({
+          center: [lng, lat],
+          zoom: 15.5,
+          pitch: modeRef.current ? DISTRICT_PITCH : 0,
+          duration: 900,
+          essential: true,
+        });
+      } catch {
+        /* non-fatal */
+      }
+    }
+    // Resolve the containing district (or nearest, when outside all 8) and
+    // open the existing bottom sheet. The live risk comes from the same
+    // riskBySlugRef the tap handler uses, so a not-yet-fetched district shows
+    // its seeded demo risk rather than a blank.
+    const hit = districtAt(lng, lat, districtsFC);
+    if (hit) {
+      const risk = Number(riskBySlugRef.current[hit.slug]);
+      setSelected({
+        slug: hit.slug,
+        nameRu: hit.nameRu,
+        nameKk: hit.nameKk,
+        risk: Number.isFinite(risk) ? risk : 0,
+        outOfCoverage: !hit.inside,
+      });
+    }
+    // Close the overlay last — selecting does NOT clear the pin (the pin
+    // marks the flown-to building); it clears on the next search open or a
+    // close-without-select.
+    setSearchOpen(false);
+  }
+
   // ---- 2D/3D mode setter ----------------------------------------------------
   // Smoothly eases the camera between tilted (3D) and flat (2D), and shows/hides
   // the building-extrusion layer. The choice is persisted to localStorage so it
@@ -1271,7 +1375,7 @@ export function MapClient({ districtsFC }: { districtsFC: DistrictFC }) {
         <MapTopBar
           city={tt("app.city")}
           country={tt("app.country")}
-          onSearch={() => {}}
+          onSearch={openSearch}
           onLocate={handleLocate}
         />
         {geoStatus === "locating" ? (
@@ -1319,10 +1423,20 @@ export function MapClient({ districtsFC }: { districtsFC: DistrictFC }) {
             name={sheetName}
             risk={selected.risk}
             verdict={sheetVerdict}
+            caption={selected.outOfCoverage ? tt("map.search.outOfCoverage") : undefined}
             onClose={() => setSelected(null)}
             onOpen={() => router.push(`/d/${encodeURIComponent(selected.slug)}`)}
           />
         ) : null}
+
+        {/* Address search overlay (PROMPTS §9.3). Slides from the top over the
+            map; debounced Nominatim search; selecting a result flies the camera,
+            drops a pin, and opens the district sheet. */}
+        <MapSearchOverlay
+          open={searchOpen}
+          onClose={closeSearch}
+          onSelect={handleSearchSelect}
+        />
       </div>
     </div>
   );
@@ -1332,12 +1446,14 @@ function PreviewSheet({
   name,
   risk,
   verdict,
+  caption,
   onClose,
   onOpen,
 }: {
   name: string;
   risk: number;
   verdict: string;
+  caption?: string;
   onClose: () => void;
   onOpen: () => void;
 }) {
@@ -1362,7 +1478,17 @@ function PreviewSheet({
         }}
       >
         <div className="flex items-start justify-between gap-3">
-          <h2 className="text-h2 text-ink leading-[24px]">{name}</h2>
+          <div className="flex min-w-0 flex-col gap-1">
+            <h2 className="text-h2 text-ink leading-[24px] truncate">{name}</h2>
+            {caption ? (
+              <span
+                className="text-caption leading-[18px] truncate"
+                style={{ color: "var(--ink-60)" }}
+              >
+                {caption}
+              </span>
+            ) : null}
+          </div>
           <button
             type="button"
             aria-label="Закрыть"

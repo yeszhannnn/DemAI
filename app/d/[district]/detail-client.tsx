@@ -119,6 +119,24 @@ export function DetailClient({ district, demo }: DetailClientProps) {
   const whyRef = useRef<HTMLDivElement | null>(null);
   const dataRef = useRef<RiskResponse | null>(null);
   dataRef.current = data;
+  // Double-navigation guard for the grid/home button (top-left). `router.push`
+  // is async; a rapid double-tap (or the 20-click acceptance test) can fire it
+  // twice before the first navigation commits, which on some timings re-enters
+  // the guard path. The ref is set on the first tap and cleared once the route
+  // settles (a short safety timeout covers the case where no event fires).
+  const navigatingHomeRef = useRef(false);
+
+  function goHome(): void {
+    if (navigatingHomeRef.current) return;
+    navigatingHomeRef.current = true;
+    router.push("/home");
+    // Re-arm after the navigation has had time to commit. Long enough to
+    // swallow a double-tap, short enough that a genuine second intent (e.g.
+    // the user comes back to Detail and taps again) still works.
+    setTimeout(() => {
+      navigatingHomeRef.current = false;
+    }, 400);
+  }
 
   // Fetch /api/risk (demo → snapshot, zero external network). The effect re-runs
   // when the profile changes (e.g. after a diary write flips personalPm25),
@@ -170,7 +188,7 @@ export function DetailClient({ district, demo }: DetailClientProps) {
     if (!data) return [];
     const ctx: ActionContext = {
       risk: data.risk,
-      diagnosis: profile?.diagnosis ?? "pollinosis",
+      diagnosis: profile?.diagnosis ?? ["pollinosis"],
       triggers: profile?.triggers ?? ["wormwood", "birch", "ragweed"],
       pollen: data.pollen,
       weather: data.weather,
@@ -213,7 +231,7 @@ export function DetailClient({ district, demo }: DetailClientProps) {
             variant="detail"
             title={districtName}
             subtitle={tt("app.city")}
-            onHome={() => router.push("/home")}
+            onHome={goHome}
             iconClassName="tap"
           />
         </section>
@@ -980,7 +998,7 @@ export function BotBanner({
     : "";
   const pushText =
     locale === "kk"
-      ? `Ертең ${districtName} ауданында: тәуекел ${data.risk}/10, ${chipLabel}. Тозаң ${data.pollen.wormwood}/5. ${firstActionText}`
+      ? `Ертең ${districtName} ауданында: Қауіп деңгейі ${data.risk}/10, ${chipLabel}. Тозаң ${data.pollen.wormwood}/5. ${firstActionText}`
       : `Завтра в ${districtName}: риск ${data.risk}/10, ${chipLabel}. Полынь ${data.pollen.wormwood}/5. ${firstActionText}`;
 
   return (

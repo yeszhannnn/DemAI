@@ -17,19 +17,33 @@ import {
   User,
   Wand,
   Wind,
+  type LucideIcon,
 } from "lucide-react";
 import {
   OptionCard,
   PrimaryButton,
   ProgressDots,
+  ConditionCard,
 } from "@/components/ui/Onboarding";
 import { getPlaces, setPlaces, useProfile } from "@/lib/useProfile";
 import { setLocale, t, useLocale, useT, localeWasPicked, type Locale } from "@/lib/i18n";
 import { DISTRICTS } from "@/data/districts";
 import { isDemo } from "@/lib/demo";
-import type { Diagnosis, Profile, Trigger } from "@/lib/risk";
+import { CONDITIONS, autoTriggersFor, anySensitive, type Condition } from "@/lib/conditions";
+import type { Profile, Trigger } from "@/lib/risk";
 
 const TOTAL_STEPS = 5;
+
+/** lucide name (lib/conditions.ts `icon`) → component. Keeps conditions.ts
+ *  React-free (same convention as lib/actions.ts). */
+const CONDITION_ICONS: Record<string, LucideIcon> = {
+  wind: Wind,
+  sprout: Sprout,
+  leaf: Leaf,
+  "heart-pulse": HeartPulse,
+  baby: Baby,
+  "circle-help": CircleHelp,
+};
 
 function haversineKm(
   a: { lat: number; lon: number },
@@ -46,28 +60,13 @@ function haversineKm(
   return 2 * R * Math.asin(Math.sqrt(s));
 }
 
-function triggersForDiagnosis(d: Diagnosis): Trigger[] {
-  const pollen: Trigger[] = ["wormwood", "birch", "ragweed"];
-  const air: Trigger[] = ["pm25", "smoke"];
-  switch (d) {
-    case "pollinosis":
-      return pollen;
-    case "asthma":
-      return air;
-    case "both":
-      return [...pollen, ...air];
-    default:
-      return [...pollen, ...air];
-  }
-}
-
 export default function OnboardingPage() {
   return <OnboardingFlow />;
 }
 
 function OnboardingFlow() {
   const router = useRouter();
-  const { profile, isComplete, saveProfile } = useProfile();
+  const { profile, isComplete, saveProfile, hydrated } = useProfile();
   const reduceMotion = usePrefersReducedMotion();
   // §5.5: if the user picked a locale on the landing, skip S0 and start at S1.
   const [step, setStep] = useState(() => (localeWasPicked() ? 1 : 0));
@@ -80,7 +79,9 @@ function OnboardingFlow() {
 
   // Draft state (saved only at the finish tap).
   const [who, setWho] = useState<Profile["who"] | null>(null);
-  const [diagnosis, setDiagnosis] = useState<Diagnosis | null>(null);
+  // Multi-select of condition ids from lib/conditions.ts (RECOMMENDED route —
+  // people have both asthma AND pollinosis). Empty = "not picked yet".
+  const [diagnosis, setDiagnosis] = useState<string[]>([]);
   const [childAge, setChildAge] = useState<number>(7);
   const [triggers, setTriggers] = useState<Trigger[]>([]);
   const [geoStatus, setGeoStatus] = useState<"idle" | "locating" | "denied">(
@@ -88,12 +89,15 @@ function OnboardingFlow() {
   );
 
   // Returning-user guard (§7): a complete profile never re-runs onboarding.
+  // Wait for `hydrated` so a stale pre-hydration `isComplete === false`
+  // never bounces a returning user who landed on /onboarding mid-flow.
   useEffect(() => {
+    if (!hydrated) return;
     if (isComplete && profile?.district) {
       const demo = isDemo();
       router.replace(`/d/${profile.district}${demo ? "?demo=1" : ""}`);
     }
-  }, [isComplete, profile, router]);
+  }, [hydrated, isComplete, profile, router]);
 
   useEffect(
     () => () => {
@@ -128,10 +132,10 @@ function OnboardingFlow() {
     const p: Profile = {
       who: who ?? "self",
       childAge: who === "parent" ? childAge : undefined,
-      diagnosis: diagnosis ?? "unknown",
+      diagnosis,
       triggers,
       district,
-      sensitive: diagnosis === "unknown",
+      sensitive: anySensitive(diagnosis),
     };
     saveProfile(p);
     // Auto-create «Дом» from the chosen district (PROMPTS §8.1). Seed only
@@ -149,11 +153,12 @@ function OnboardingFlow() {
     router.replace(`/d/${district}${demo ? "?demo=1" : ""}`);
   }
 
-  function selectDiagnosis(d: Diagnosis) {
-    setDiagnosis(d);
-    if (who === "self" && d !== "unknown") {
-      goTo(3, 1);
-    }
+  /** Multi-select toggle of a condition id. The union of `autoTriggers` from
+   *  all selected conditions feeds S3's «Выбрать за меня по диагнозу». */
+  function toggleDiagnosis(id: string) {
+    setDiagnosis((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
   }
 
   function toggleTrigger(tg: Trigger) {
@@ -163,7 +168,7 @@ function OnboardingFlow() {
   }
 
   function pickForMe() {
-    setTriggers(triggersForDiagnosis(diagnosis ?? "unknown"));
+    setTriggers(autoTriggersFor(diagnosis));
     goTo(4, 1);
   }
 
@@ -193,9 +198,12 @@ function OnboardingFlow() {
     );
   }
 
+  // Multi-select S2: always show Continue (no auto-advance — the user may
+  // pick more than one condition). Enabled once at least one is selected and
+  // (for parents) the child age is positive.
   const canContinueS2 =
-    diagnosis !== null && (who !== "parent" || childAge > 0);
-  const showContinueS2 = who === "parent" || diagnosis === "unknown";
+    diagnosis.length > 0 && (who !== "parent" || childAge > 0);
+  const showContinueS2 = true;
 
   const enterName = direction === 1 ? "onb-enter-fwd" : "onb-enter-back";
   const exitName = direction === 1 ? "onb-exit-fwd" : "onb-exit-back";
@@ -223,7 +231,7 @@ function OnboardingFlow() {
             diagnosis={diagnosis}
             childAge={childAge}
             setChildAge={setChildAge}
-            selectDiagnosis={selectDiagnosis}
+            toggleDiagnosis={toggleDiagnosis}
             showContinue={showContinueS2}
             canContinue={canContinueS2}
             onContinue={() => goTo(3, 1)}
@@ -367,10 +375,11 @@ function Step1({ onPick }: { onPick: (w: Profile["who"]) => void }) {
 
 interface Step2Props {
   who: Profile["who"] | null;
-  diagnosis: Diagnosis | null;
+  /** Selected condition ids (multi-select from lib/conditions.ts). */
+  diagnosis: string[];
   childAge: number;
   setChildAge: (n: number) => void;
-  selectDiagnosis: (d: Diagnosis) => void;
+  toggleDiagnosis: (id: string) => void;
   showContinue: boolean;
   canContinue: boolean;
   onContinue: () => void;
@@ -381,18 +390,14 @@ function Step2({
   diagnosis,
   childAge,
   setChildAge,
-  selectDiagnosis,
+  toggleDiagnosis,
   showContinue,
   canContinue,
   onContinue,
 }: Step2Props) {
   const tt = useT();
-  const options: { key: Diagnosis; label: string; icon: typeof Wind }[] = [
-    { key: "asthma", label: tt("onb.diag.asthma"), icon: Wind },
-    { key: "pollinosis", label: tt("onb.diag.pollinosis"), icon: Sprout },
-    { key: "both", label: tt("onb.diag.both"), icon: HeartPulse },
-    { key: "unknown", label: tt("onb.diag.unknown"), icon: CircleHelp },
-  ];
+  const [locale] = useLocale();
+  const labelField: keyof Condition = locale === "kk" ? "labelKk" : "labelRu";
   return (
     <div>
       <StepTitle title={tt("onb.s2.title")} hint={tt("onb.s2.hint")} />
@@ -432,20 +437,27 @@ function Step2({
         </div>
       )}
 
-      <div className="flex flex-col gap-3">
-        {options.map((o) => (
-          <OptionCard
-            key={o.key}
-            icon={o.icon}
-            selected={diagnosis === o.key}
-            onClick={() => selectDiagnosis(o.key)}
+      {/* Multi-select condition cards — the single source of truth is
+          lib/conditions.ts. Adding a condition later is one edit there.
+          2-col CSS grid with align-items: stretch → both cards in a row share
+          the SAME height (the taller label sets the row height for both). */}
+      <div
+        className="grid grid-cols-2 gap-3"
+        style={{ alignItems: "stretch" }}
+      >
+        {CONDITIONS.map((c) => (
+          <ConditionCard
+            key={c.id}
+            icon={CONDITION_ICONS[c.icon] ?? CircleHelp}
+            selected={diagnosis.includes(c.id)}
+            onClick={() => toggleDiagnosis(c.id)}
           >
-            {o.label}
-          </OptionCard>
+            {c[labelField]}
+          </ConditionCard>
         ))}
       </div>
 
-      {diagnosis === "unknown" && (
+      {diagnosis.includes("other_unknown") && (
         <p
           className="mt-4 text-body"
           style={{ color: "var(--white)" }}

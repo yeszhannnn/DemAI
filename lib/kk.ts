@@ -18,11 +18,11 @@ export const kk = {
   "app.country": "Қазақстан", // REVIEW: native speaker
 
   // Badges
-  "badge.now": "Қазір", // REVIEW: native speaker
+  "badge.now": "Real-time", // REVIEW: native speaker
   "badge.live": "Live", // REVIEW: native speaker
 
   // Home screen (§5.2)
-  "home.title": "Тәуекел және ауа сапасы", // REVIEW: native speaker
+  "home.title": "Қауіп деңгейі және ауа сапасы", // REVIEW: native speaker
   "home.places": "Менің орындарым", // REVIEW: native speaker
   "home.addTitle": "Орын қосу", // REVIEW: native speaker
   "home.addHint": "Атау мен ауданды таңдаңыз", // REVIEW: native speaker
@@ -31,6 +31,14 @@ export const kk = {
   "home.addConfirm": "Қосу", // REVIEW: native speaker
   "home.addCancel": "Бас тарту", // REVIEW: native speaker
 
+  // Search overlay (Home search circle)
+  "search.placeholder": "Орындар бойынша іздеу", // REVIEW: native speaker
+  "search.aria.open": "Іздеу", // REVIEW: native speaker
+  "search.aria.clear": "Тазалау", // REVIEW: native speaker
+  "search.aria.close": "Жабу", // REVIEW: native speaker
+  "search.empty": "Ештеңе табылмады", // REVIEW: native speaker
+  "search.hint": "Басты бетте орын қосыңыз", // REVIEW: native speaker
+
   // Places
   "place.home": "Үй", // REVIEW: native speaker
   "place.school": "Мектеп", // REVIEW: native speaker
@@ -38,7 +46,7 @@ export const kk = {
   "place.add": "+ Орын қосу", // REVIEW: native speaker
 
   // Detail screen (§5.1)
-  "detail.forecast": "Тәуекел болжамы", // REVIEW: native speaker
+  "detail.forecast": "Қауіп деңгейінің болжамы", // REVIEW: native speaker
   "detail.forecastTooltip": "{risk}/10 · {day} {time}", // REVIEW: native speaker
   "detail.why": "Неге {risk}/10", // REVIEW: native speaker
   "detail.actionsTitle": "Ертеңге 3 әрекет", // REVIEW: native speaker
@@ -68,7 +76,7 @@ export const kk = {
   "detail.diaryError": "Сақтау мүмкін болмады — қайталап көріңіз", // REVIEW: native speaker
   "detail.diaryToday": "Бүгін: белгіленді ✓", // REVIEW: native speaker
   "detail.diaryInfo":
-    "Күніне бір рет күйіңізді белгелеңіз. 7 күннен кейін DemAI сіздің жеке PM2.5 шегіңізді табады — және тәуекел болжамы жалпы шкала бойынша емес, дәл сізге есептеледі.", // REVIEW: native speaker
+    "Күніне бір рет күйіңізді белгелеңіз. 7 күннен кейін DemAI сіздің жеке PM2.5 шегіңізді табады — және қауіп деңгейінің болжамы жалпы шкала бойынша емес, дәл сізге есептеледі.", // REVIEW: native speaker
   "detail.personalThreshold":
     "Жеке шегі: {pm} мкг/м³ — күнделігіңізден {n} күннен табылды", // REVIEW: native speaker
 
@@ -84,9 +92,9 @@ export const kk = {
   "level.high": "жоғары", // REVIEW: native speaker
 
   // Risk chips (§6 verdict table)
-  "risk.low": "Төмен тәуекел", // REVIEW: native speaker
-  "risk.mid": "Орта тәуекел", // REVIEW: native speaker
-  "risk.high": "Жоғары тәуекел", // REVIEW: native speaker
+  "risk.low": "Төмен қауіп деңгейі", // REVIEW: native speaker
+  "risk.mid": "Орта қауіп деңгейі", // REVIEW: native speaker
+  "risk.high": "Жоғары қауіп деңгейі", // REVIEW: native speaker
   "risk.severe": "Өте жоғары", // REVIEW: native speaker
 
   // Verdicts (§6 verdict table) — text to the right of the blob
@@ -112,8 +120,8 @@ export const kk = {
   // S0 — language
   "onb.s0.title": "Тілді таңдаңыз", // REVIEW: native speaker
   "onb.s0.hint": "Кейін өзгерте аласыз", // REVIEW: native speaker
-  "onb.lang.kk": "Қазақша", // REVIEW: native speaker
-  "onb.lang.ru": "Русский", // REVIEW: native speaker
+  "onb.lang.kk": "KZ", // REVIEW: native speaker
+  "onb.lang.ru": "RU", // REVIEW: native speaker
 
   // S1 — who
   "onb.s1.title": "Болжам кімге?", // REVIEW: native speaker
@@ -121,13 +129,9 @@ export const kk = {
   "onb.who.self": "Өзіме", // REVIEW: native speaker
   "onb.who.parent": "Балама", // REVIEW: native speaker
 
-  // S2 — diagnosis
+  // S2 — diagnosis (labels live in lib/conditions.ts — single source of truth)
   "onb.s2.title": "Диагноз", // REVIEW: native speaker
   "onb.s2.hint": "Барлығы тек осы телефонда сақталады", // REVIEW: native speaker
-  "onb.diag.asthma": "Демікпе", // REVIEW: native speaker
-  "onb.diag.pollinosis": "Поллиноз", // REVIEW: native speaker
-  "onb.diag.both": "Екеуі де", // REVIEW: native speaker
-  "onb.diag.unknown": "Білмеймін", // REVIEW: native speaker
   "onb.childAge.label": "Баланың жасы", // REVIEW: native speaker
   "onb.childAge.suffix": "жас", // REVIEW: native speaker
   "onb.sensitive.copy":
@@ -165,10 +169,19 @@ export const kk = {
   "map.geo.locating": "Анықтап жатырмыз…", // REVIEW: native speaker
   "map.sheetUnit": "/10", // REVIEW: native speaker
 
+  // Map search overlay (§5.3 / PROMPTS §9.3) — Nominatim address search
+  "map.search.placeholder": "Алматыдағы мекенжай", // REVIEW: native speaker
+  "map.search.aria.open": "Мекенжайды іздеу", // REVIEW: native speaker
+  "map.search.aria.clear": "Тазалау", // REVIEW: native speaker
+  "map.search.aria.close": "Жабу", // REVIEW: native speaker
+  "map.search.empty": "Ештеңе табылмады", // REVIEW: native speaker
+  "map.search.offline": "Іздеу офлайн қолжетімсіз", // REVIEW: native speaker
+  "map.search.outOfCoverage": "Мекенжай қамту аймағынан тыс", // REVIEW: native speaker
+
   // Landing — pre-onboarding (§5.5)
   "landing.h1": "Ауа сапасы мен тозаң деңгейінің жеке болжамы", // REVIEW: native speaker
   "landing.sub":
-    "DemAI ауа мен тозаң деректерін бір түсінікті 1–10 тәуекелге және ертеңге 3 әрекетке айналдырады — сіздің диагнозыңыз бен ауданыңыз бойынша", // REVIEW: native speaker
+    "DemAI ауа мен тозаң деректерін бір түсінікті 1–10 қауіп деңгейіне және ертеңге 3 әрекетке айналдырады — сіздің диагнозыңыз бен ауданыңыз бойынша", // REVIEW: native speaker
   "landing.start": "Бастау", // REVIEW: native speaker
   "landing.ctaCaption": "Тіркелусіз · 30 секунд ішінде", // REVIEW: native speaker
   "landing.feature.risk": "Бүгінге және ертеңге арналған 1–10 қауіп деңгейі", // REVIEW: native speaker
@@ -178,4 +191,26 @@ export const kk = {
   "landing.locale.ru": "RU", // REVIEW: native speaker
   "landing.logoAria": "DemAI — басты бет", // REVIEW: native speaker
   "landing.localeAria": "Тілді таңдау", // REVIEW: native speaker
+
+  // Settings screen (§5.6)
+  "settings.title": "Параметрлер", // REVIEW: native speaker
+  "settings.done": "Дайын", // REVIEW: native speaker
+  "settings.saved": "Сақталды", // REVIEW: native speaker
+  "settings.language": "Тіл", // REVIEW: native speaker
+  "settings.who": "Кімсіз", // REVIEW: native speaker
+  "settings.who.self": "Өзім", // REVIEW: native speaker
+  "settings.who.parent": "Баланың ата-анасы", // REVIEW: native speaker
+  "settings.diagnosis": "Диагноз", // REVIEW: native speaker
+  "settings.triggers": "Триггерлер", // REVIEW: native speaker
+  "settings.district": "Аудан", // REVIEW: native speaker
+  "settings.childAge": "Баланың жасы", // REVIEW: native speaker
+  "settings.reset": "Қалпына келтіру", // REVIEW: native speaker
+  "settings.resetButton": "Профильді қалпына келтіру", // REVIEW: native speaker
+  "settings.resetConfirmTitle": "Шынында қалпына келтіреміз бе?", // REVIEW: native speaker
+  "settings.resetConfirmBody": "Профиль мен параметрлер жойылады", // REVIEW: native speaker
+  "settings.resetConfirmCancel": "Бас тарту", // REVIEW: native speaker
+  "settings.resetConfirmOk": "Қалпына келтіру", // REVIEW: native speaker
+  "settings.lang.kk": "KZ", // REVIEW: native speaker
+  "settings.lang.ru": "RU", // REVIEW: native speaker
+  "settings.backAria": "Артқа", // REVIEW: native speaker
 } satisfies Dict;

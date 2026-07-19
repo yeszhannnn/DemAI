@@ -30,6 +30,7 @@ import { useLocale, useT } from "@/lib/i18n";
 import { getDistrict } from "@/data/districts";
 import type { RiskResponse } from "@/lib/compose";
 import { AddPlaceSheet } from "./AddPlaceSheet";
+import { SearchOverlay } from "./SearchOverlay";
 
 type PresetKey = "place.home" | "place.school" | "place.section";
 type LabelT = (k: PresetKey) => string;
@@ -48,17 +49,26 @@ function newId(): string {
 
 export default function HomePage() {
   const router = useRouter();
-  const { places, isComplete, addPlace, setPlaces } = useProfile();
+  const { places, isComplete, addPlace, setPlaces, hydrated } = useProfile();
   const tt = useT();
   const [locale] = useLocale();
   const demo = isDemo();
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
 
   // Guard: no profile → onboarding (DESIGN §7 returning-user rule). Demo mode
   // is exempt so /home?demo=1 renders standalone without network/onboarding.
+  //
+  // MUST wait for `hydrated`: on a hard refresh (or an immediate tap of the
+  // Detail grid button right after a refresh) the server snapshot is `null`,
+  // so `isComplete` is transiently `false`. Without this gate the guard would
+  // fire on that stale tick and bounce a complete profile to /onboarding —
+  // the "Detail home button sometimes lands on onboarding" race. Only
+  // redirect when `hydrated === true AND isComplete === false`.
   useEffect(() => {
+    if (!hydrated) return;
     if (!isComplete && !demo) router.replace("/onboarding");
-  }, [isComplete, demo, router]);
+  }, [hydrated, isComplete, demo, router]);
 
   // Demo self-seed: ensure a «Дом» place exists so the screen renders offline.
   useEffect(() => {
@@ -84,6 +94,13 @@ export default function HomePage() {
     setSheetOpen(false);
   }
 
+  // Splash until hydration settles (and while a genuine onboarding redirect is
+  // in flight). Never paint Home content on a stale snapshot, and never flash
+  // onboarding for a complete profile. Demo mode skips the splash so
+  // /home?demo=1 paints at once.
+  if (!hydrated && !demo) return null;
+  if (hydrated && !isComplete && !demo) return null;
+
   return (
     <div
       className="flex w-full justify-center"
@@ -94,7 +111,12 @@ export default function HomePage() {
         style={{ minHeight: "100dvh", background: "var(--bg-home)" }}
       >
         <div className="flex flex-col gap-4 pt-6 pb-28">
-          <TopBar variant="home" title={tt("app.city")} />
+          <TopBar
+            variant="home"
+            title={tt("app.city")}
+            onSearch={() => setSearchOpen(true)}
+            onSettings={() => router.push("/settings")}
+          />
 
           {/* Header: [Сейчас pill] inline at the start of the h1's first line,
               on the same baseline as «Риски»; the heading wraps to fill the row
@@ -155,6 +177,16 @@ export default function HomePage() {
           open={sheetOpen}
           onClose={() => setSheetOpen(false)}
           onConfirm={handleAdd}
+        />
+
+        <SearchOverlay
+          open={searchOpen}
+          places={places}
+          onClose={() => setSearchOpen(false)}
+          onSelect={(slug) => {
+            setSearchOpen(false);
+            openDistrict(slug);
+          }}
         />
       </div>
     </div>

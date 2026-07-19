@@ -12,7 +12,6 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const OUT = join(ROOT, "public");
-
 // DESIGN §1.1 core colors as RGB tuples (--lime and --ink).
 const LIME = [0xea, 0xfc, 0x5f];
 const INK = [0x21, 0x21, 0x21];
@@ -55,7 +54,7 @@ function chunk(type, data) {
 }
 
 /** Encode an RGBA buffer to a PNG. */
-function encodePng(width, height, rgba) {
+export function encodePng(width, height, rgba) {
   const sig = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
   const ihdr = Buffer.alloc(13);
   ihdr.writeUInt32BE(width, 0);
@@ -82,7 +81,7 @@ function encodePng(width, height, rgba) {
 }
 
 /** Render the DemAI icon at size N to an RGBA buffer. */
-function renderIcon(n) {
+export function renderIcon(n) {
   const rgba = Buffer.alloc(n * n * 4);
   const r = Math.round(n * 0.22); // corner radius
   const glyphH = Math.round(n * 0.56);
@@ -150,10 +149,15 @@ function writeSvg() {
   console.log("  icon.svg (scalable)");
 }
 
-mkdirSync(OUT, { recursive: true });
-console.log("Generating DemAI PWA icons into /public …");
-writePng("icon-192.png", 192);
-writePng("icon-512.png", 512);
-writePng("apple-touch-icon.png", 180);
-writeSvg();
-console.log("Done.");
+// Only run the write step when executed directly (not when imported by
+// gen-favicon.mjs, which just borrows renderIcon/encodePng).
+const isMain = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];
+if (isMain) {
+  mkdirSync(OUT, { recursive: true });
+  console.log("Generating DemAI PWA icons into /public …");
+  writePng("logo.png", 192);
+  writePng("logo.png", 512);
+  writePng("logo.png", 180);
+  writeSvg();
+  console.log("Done.");
+}

@@ -8,9 +8,10 @@ import { test, expect } from "@playwright/test";
  *   → lands on Detail → all 9 section test-ids present, in order
  *   → disclaimer visible.
  *
- * The onboarding flow is S0 language → S1 who → S2 diagnosis (auto-advances
- * for self/non-unknown) → S3 triggers ("pick for me" auto-advances) → S4
- * district (finish). That is 5 taps — well within the ≤7 budget.
+ * The onboarding flow is S0 language → S1 who → S2 diagnosis (multi-select,
+ * so a Continue tap is always required) → S3 triggers ("pick for me"
+ * auto-advances) → S4 district (finish). That is 6 taps — well within the ≤7
+ * budget.
  */
 
 const EXPECTED_SECTIONS = [
@@ -41,8 +42,9 @@ test("happy path: ≤7 taps to Detail with all 9 sections in demo mode", async (
   // S1 — who: «Для меня».
   await tap(page.getByRole("button", { name: "Для меня" }));
 
-  // S2 — diagnosis: «Астма» (self + non-unknown → auto-advance to S3).
+  // S2 — diagnosis: «Астма» (multi-select → needs an explicit Continue tap).
   await tap(page.getByRole("button", { name: "Астма" }));
+  await tap(page.getByRole("button", { name: "Продолжить" }));
 
   // S3 — triggers: «Выбрать за меня по диагнозу» (auto-advances to S4).
   await tap(page.getByRole("button", { name: "Выбрать за меня по диагнозу" }));

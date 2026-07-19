@@ -132,18 +132,16 @@ function TopBar() {
       <div className="flex items-center gap-2.5">
         <span
           aria-hidden
-          className="inline-flex shrink-0 items-center justify-center rounded-full"
-          style={{
-            width: 44,
-            height: 44,
-            background: "var(--lime)",
-            color: "var(--ink)",
-            fontWeight: 700,
-            fontSize: 22,
-            lineHeight: 1,
-          }}
+          className="inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full"
+          style={{ width: 44, height: 44 }}
         >
-          D
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logo.png"
+            alt=""
+            draggable={false}
+            style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+          />
         </span>
         <h2 className="text-h2 text-white">{t("app.name")}</h2>
       </div>

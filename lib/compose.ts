@@ -57,7 +57,7 @@ export interface RiskResponse {
 /** A neutral default profile: pollinosis, all triggers, not sensitive (×1.0). */
 export const NEUTRAL_PROFILE: Profile = {
   who: "self",
-  diagnosis: "pollinosis",
+  diagnosis: ["pollinosis"],
   triggers: ["pm25", "wormwood", "birch", "ragweed"],
   district: "",
   sensitive: false,
